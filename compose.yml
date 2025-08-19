@@ -1,15 +1,15 @@
 services:
   #------------------------------------------ PostgreSQL Database -------------------------------------------------------#
   postgres:
-    container_name: postgreSQL
-    image: postgres:15.4
+    container_name: postgresql
+    image: postgres:latest
     command: [ "postgres", "-c", "max_connections=200", "-c", "shared_buffers=24MB", "-c", "listen_addresses=*" ]
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-justix_academy_db}
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres -d justix_academy_db" ]
+      test: [ "CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -18,48 +18,53 @@ services:
     networks:
       - infra-network
     volumes:
-      - ./db/init_dbs.sql:/docker-entrypoint-initdb.d/01-init-dbs.sql
-      - postgres_data:/var/lib/postgresql/data
-
-  #------------------------------------------- Keycloak -----------------------------------------------------------------#
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+      - ./data/postgres:/var/data/postgresql
+  #------------------------------------------- Keycloak ----------------------------------------------------------------
   keycloak:
     container_name: keycloak
-    image: quay.io/keycloak/keycloak:26.3.2
-    restart: on-failure
-    command: >
-      start-dev
-      --http-enabled=true
-      --import-realm
-      --verbose
-      --features=scripts
-    working_dir: /opt/keycloak
-    volumes:
-      - ./keycloak:/opt/keycloak/data/import
+    image: quay.io/keycloak/keycloak:latest
+    command: ["start-dev", "--import-realm", "--hostname-strict=false"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD}
+      KC_DB: postgres
+      KC_DB_SCHEMA: keycloak
+      KC_DB_USERNAME: ${KC_DB_USERNAME}
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD}
+      KC_DB_URL_HOST: ${KC_DB_URL_HOST}
+      KC_DB_URL_PORT: ${KC_DB_URL_PORT}
+      KC_DB_URL_DATABASE: ${KC_DB_URL_DATABASE}
+      KC_DB_URL_PROPERTIES: "?sslmode=${KC_DB_SSLMODE}"
+      KC_HTTP_ENABLED: "true"
+      KC_HEALTH_ENABLED: "true"
+      KC_METRICS_ENABLED: "true"
+    depends_on:
+      postgres:
+        condition: service_healthy
     ports:
       - "8080:8080"
-    environment:
-      KC_FEATURES: "scripts"
-      KC_DB: postgres
-      KC_DB_URL_HOST: postgres
-      KC_DB_URL_DATABASE: keycloak_db
-      KC_DB_PASSWORD: postgres
-      KC_DB_USERNAME: postgres
-      KEYCLOAK_ADMIN: admin
-      KEYCLOAK_ADMIN_PASSWORD: admin
-      KC_HEALTH_ENABLED: true
-      KC_METRICS_ENABLED: true
-      KC_HOSTNAME_STRICT: false
-      KC_HOSTNAME_STRICT_HTTPS: false
-    depends_on:
-      - postgres
+    volumes:
+      - ./keycloak/:/opt/keycloak/data/import
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://keycloak:8080/health/ready" ]
+      test: [ "CMD", "/opt/keycloak/bin/kc.sh", "show-config" ]
       interval: 15s
-      timeout: 2s
+      timeout: 5s
       retries: 15
     networks:
       - infra-network
-
+  #------------------------------------------- Keycloak Init----------------------------------------------------------------
+  keycloak-init:
+    container_name: keycloak-init
+    image: postgres:latest
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    networks:
+      - infra-network
+    entrypoint: >
+      bash -c "sleep 10 &&
+      PGPASSWORD=passwd psql -h postgres -U postgres -d academy -c \"UPDATE keycloak.realm SET ssl_required='NONE' WHERE name='master';\""
   #------------------------------------------ Redis ---------------------------------------------------------------------#
   redis:
     container_name: redis
@@ -68,13 +73,13 @@ services:
       - "6379:6379"
     environment:
       REDIS_PASSWORD: ${REDIS_PASSWORD:-password}
-    command: redis-server --requirepass ${REDIS_PASSWORD:-password}
+    command: redis-server --requirepass ${REDIS_PASSWORD}
     volumes:
-      - redis_data:/data
+      - ./data/redis:/data
     networks:
       - infra-network
     healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
+      test: [ "CMD","redis-cli -a ${REDIS_PASSWORD:-password} ping | grep PONG" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -86,9 +91,10 @@ services:
     ports:
       - '5540:5540'
     volumes:
-      - redis_insight_data:/data
+      - ./data/redis:/data
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
     networks:
       - infra-network
     environment:
@@ -102,7 +108,7 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-admin}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-admin}
     volumes:
-      - minio_data:/data
+      - ./data/minio:/data
     ports:
       - '9000:9000'
       - '9001:9001'
@@ -148,7 +154,7 @@ services:
       retries: 5
 
     volumes:
-      - kafka_data:/bitnami/kafka
+      - ./data/kafka:/var/lib/kafka/data
     networks:
       - infra-network
 
@@ -168,29 +174,16 @@ services:
       KAFKA_CLUSTERS_0_AUDIT_CONSOLEAUDITENABLED: true
       LOGGING_LEVEL_ROOT: INFO
       LOGGING_LEVEL_COM_PROVECTUS: DEBUG
-
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8080" ]
       interval: 15s
       timeout: 5s
       retries: 5
-
     depends_on:
-      - kafka
+      kafka:
+        condition: service_healthy
     networks:
       - infra-network
-#------------------------------------------- Volumes ------------------------------------------------------------------#
-volumes:
-  kafka_data:
-    driver: local
-  redis_data:
-    driver: local
-  postgres_data:
-    driver: local
-  minio_data:
-    driver: local
-  redis_insight_data:
-    driver: local
 #---------------------------------------------- Networks --------------------------------------------------------------#
 networks:
   infra-network:
