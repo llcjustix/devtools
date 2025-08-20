@@ -186,3 +186,4 @@ services:
 networks:
   infra-network:
     driver: bridge
+    name: infra-network
