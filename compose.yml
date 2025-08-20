@@ -146,13 +146,11 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_DEFAULT_REPLICATION_FACTOR: 1
       KAFKA_MIN_IN_SYNC_REPLICAS: 1
-
     healthcheck:
       test: ["CMD-SHELL", "nc -z localhost 29092 || exit 1"]
       interval: 15s
       timeout: 10s
       retries: 5
-
     volumes:
       - ./data/kafka:/var/lib/kafka/data
     networks:
