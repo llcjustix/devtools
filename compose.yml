@@ -1,5 +1,5 @@
 services:
-  #------------------------------------------ PostgreSQL Database -------------------------------------------------------#
+  #------------------------------------------ PostgreSQL Database ------------------------------------------------------
   postgres:
     container_name: postgresql
     image: postgres:latest
@@ -24,7 +24,7 @@ services:
   keycloak:
     container_name: keycloak
     image: quay.io/keycloak/keycloak:latest
-    command: ["start-dev", "--import-realm", "--hostname-strict=false"]
+    command: [ "start-dev", "--import-realm", "--hostname-strict=false" ]
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME}
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD}
@@ -53,7 +53,7 @@ services:
       retries: 15
     networks:
       - infra-network
-  #------------------------------------------- Keycloak Init----------------------------------------------------------------
+  #------------------------------------------- Keycloak Init------------------------------------------------------------
   keycloak-init:
     container_name: keycloak-init
     image: postgres:latest
@@ -65,7 +65,7 @@ services:
     entrypoint: >
       bash -c "sleep 10 &&
       PGPASSWORD=passwd psql -h postgres -U postgres -d academy -c \"UPDATE keycloak.realm SET ssl_required='NONE' WHERE name='master';\""
-  #------------------------------------------ Redis ---------------------------------------------------------------------#
+  #------------------------------------------ Redis --------------------------------------------------------------------
   redis:
     container_name: redis
     image: redis:latest
@@ -121,7 +121,7 @@ services:
     networks:
       - infra-network
 
-  #---------------------------------------------------KAFKA--------------------------------------------------------------#
+  #---------------------------------------------------KAFKA-------------------------------------------------------------
   kafka:
     container_name: kafka
     image: confluentinc/cp-kafka:latest
@@ -147,7 +147,7 @@ services:
       KAFKA_DEFAULT_REPLICATION_FACTOR: 1
       KAFKA_MIN_IN_SYNC_REPLICAS: 1
     healthcheck:
-      test: ["CMD-SHELL", "nc -z localhost 29092 || exit 1"]
+      test: [ "CMD-SHELL", "nc -z localhost 29092 || exit 1" ]
       interval: 15s
       timeout: 10s
       retries: 5
@@ -156,7 +156,7 @@ services:
     networks:
       - infra-network
 
-  #------------------------------------------------------KAFKA-UI--------------------------------------------------------#
+  #------------------------------------------------------KAFKA-UI-------------------------------------------------------
   kafka-ui:
     container_name: kafka-ui
     image: provectuslabs/kafka-ui:latest
@@ -182,7 +182,162 @@ services:
         condition: service_healthy
     networks:
       - infra-network
-#---------------------------------------------- Networks --------------------------------------------------------------#
+
+  #------------------------------------------ JITSI MEET STACK ---------------------------------------------------------
+  # Jitsi Meet Web UI
+  jitsi-web:
+    image: jitsi/web:stable-9258
+    container_name: jitsi-web
+    restart: unless-stopped
+    ports:
+      - "8443:80"
+    environment:
+      - ENABLE_AUTH=1
+      - ENABLE_GUESTS=0
+      - AUTH_TYPE=jwt
+      - JWT_APP_ID=${JITSI_JWT_APP_ID:-meeting-app}
+      - JWT_APP_SECRET=${JITSI_JWT_APP_SECRET:-your-secret-key-here}
+      - JWT_ACCEPTED_ISSUERS=${JITSI_JWT_ISSUER:-meeting-app}
+      - JWT_ACCEPTED_AUDIENCES=${JITSI_JWT_AUDIENCE:-meeting-app}
+      - JWT_ALLOW_EMPTY=0
+      - XMPP_DOMAIN=meet.jitsi
+      - XMPP_AUTH_DOMAIN=auth.meet.jitsi
+      - XMPP_BOSH_URL_BASE=http://prosody:5280
+      - XMPP_MUC_DOMAIN=conference.meet.jitsi
+      - XMPP_INTERNAL_MUC_DOMAIN=internal-muc.meet.jitsi
+      - XMPP_RECORDER_DOMAIN=recorder.meet.jitsi
+      - ENABLE_RECORDING=1
+      - ENABLE_LOBBY=1
+      - PUBLIC_URL=http://localhost:8443
+      - TZ=UTC
+    volumes:
+      - ./jitsi-config/web:/config:Z
+    networks:
+      - infra-network
+    depends_on:
+      - prosody
+      - jicofo
+      - jvb
+
+  # Prosody XMPP Server
+  prosody:
+    image: jitsi/prosody:stable-9258
+    container_name: prosody
+    restart: unless-stopped
+    expose:
+      - "5222"
+      - "5347"
+      - "5280"
+    environment:
+      - ENABLE_AUTH=1
+      - ENABLE_GUESTS=0
+      - AUTH_TYPE=jwt
+      - JWT_APP_ID=${JITSI_JWT_APP_ID:-meeting-app}
+      - JWT_APP_SECRET=${JITSI_JWT_APP_SECRET:-your-secret-key-here}
+      - XMPP_DOMAIN=meet.jitsi
+      - XMPP_AUTH_DOMAIN=auth.meet.jitsi
+      - XMPP_MUC_DOMAIN=conference.meet.jitsi
+      - XMPP_INTERNAL_MUC_DOMAIN=internal-muc.meet.jitsi
+      - XMPP_RECORDER_DOMAIN=recorder.meet.jitsi
+      - JIBRI_RECORDER_USER=recorder
+      - JIBRI_RECORDER_PASSWORD=${JIBRI_RECORDER_PASSWORD:-jibri-recorder-pass}
+      - JIBRI_XMPP_USER=jibri
+      - JIBRI_XMPP_PASSWORD=${JIBRI_XMPP_PASSWORD:-jibri-xmpp-pass}
+      - JICOFO_COMPONENT_SECRET=${JICOFO_COMPONENT_SECRET:-jicofo-secret}
+      - JICOFO_AUTH_USER=focus
+      - JICOFO_AUTH_PASSWORD=${JICOFO_AUTH_PASSWORD:-jicofo-pass}
+      - JVB_AUTH_USER=jvb
+      - JVB_AUTH_PASSWORD=${JVB_AUTH_PASSWORD:-jvb-pass}
+      - JITSI_WEBHOOK_URL=${JITSI_WEBHOOK_URL:-http://localhost:2031/webhooks/jitsi}
+      - JITSI_WEBHOOK_SECRET=${JITSI_WEBHOOK_SECRET:-webhook-secret}
+      - TZ=UTC
+    volumes:
+      - ./jitsi-config/prosody:/config:Z
+      - ./jitsi-config/prosody-modules:/prosody-plugins-custom:Z
+    networks:
+      - infra-network
+
+  # Jicofo (Jitsi Conference Focus)
+  jicofo:
+    image: jitsi/jicofo:stable-9258
+    container_name: jicofo
+    restart: unless-stopped
+    environment:
+      - XMPP_DOMAIN=meet.jitsi
+      - XMPP_AUTH_DOMAIN=auth.meet.jitsi
+      - XMPP_INTERNAL_MUC_DOMAIN=internal-muc.meet.jitsi
+      - XMPP_MUC_DOMAIN=conference.meet.jitsi
+      - XMPP_SERVER=prosody
+      - JICOFO_COMPONENT_SECRET=${JICOFO_COMPONENT_SECRET:-jicofo-secret}
+      - JICOFO_AUTH_USER=focus
+      - JICOFO_AUTH_PASSWORD=${JICOFO_AUTH_PASSWORD:-jicofo-pass}
+      - JVB_BREWERY_MUC=jvbbrewery
+      - JIBRI_BREWERY_MUC=jibribrewery
+      - ENABLE_RECORDING=1
+      - TZ=UTC
+    volumes:
+      - ./jitsi-config/jicofo:/config:Z
+    networks:
+      - infra-network
+    depends_on:
+      - prosody
+
+  # JVB (Jitsi Videobridge)
+  jvb:
+    image: jitsi/jvb:stable-9258
+    container_name: jvb
+    restart: unless-stopped
+    ports:
+      - "10000:10000/udp"
+      - "4443:4443"
+    environment:
+      - XMPP_DOMAIN=meet.jitsi
+      - XMPP_AUTH_DOMAIN=auth.meet.jitsi
+      - XMPP_INTERNAL_MUC_DOMAIN=internal-muc.meet.jitsi
+      - XMPP_SERVER=prosody
+      - JVB_AUTH_USER=jvb
+      - JVB_AUTH_PASSWORD=${JVB_AUTH_PASSWORD:-jvb-pass}
+      - JVB_BREWERY_MUC=jvbbrewery
+      - JVB_PORT=10000
+      - PUBLIC_URL=http://localhost:8443
+      - TZ=UTC
+    volumes:
+      - ./jitsi-config/jvb:/config:Z
+    networks:
+      - infra-network
+    depends_on:
+      - prosody
+
+  # Jibri (Jitsi Recording)
+  jibri:
+    image: jitsi/jibri:stable-9258
+    container_name: jibri
+    restart: unless-stopped
+    privileged: true
+    environment:
+      - XMPP_DOMAIN=meet.jitsi
+      - XMPP_AUTH_DOMAIN=auth.meet.jitsi
+      - XMPP_INTERNAL_MUC_DOMAIN=internal-muc.meet.jitsi
+      - XMPP_RECORDER_DOMAIN=recorder.meet.jitsi
+      - XMPP_SERVER=prosody
+      - JIBRI_RECORDER_USER=recorder
+      - JIBRI_RECORDER_PASSWORD=${JIBRI_RECORDER_PASSWORD:-jibri-recorder-pass}
+      - JIBRI_XMPP_USER=jibri
+      - JIBRI_XMPP_PASSWORD=${JIBRI_XMPP_PASSWORD:-jibri-xmpp-pass}
+      - JIBRI_BREWERY_MUC=jibribrewery
+      - JIBRI_RECORDING_DIR=/config/recordings
+      - PUBLIC_URL=http://localhost:8443
+      - TZ=UTC
+    volumes:
+      - ./jitsi-config/jibri:/config:Z
+      - ./data/jitsi-recordings:/config/recordings:Z
+      - /dev/shm:/dev/shm
+    networks:
+      - infra-network
+    depends_on:
+      - prosody
+
+#---------------------------------------------- Networks ---------------------------------------------------------------
 networks:
   infra-network:
     driver: bridge
