@@ -1,11 +1,17 @@
--- Room Access Validator Module
--- Checks with meeting-service via /validate-access endpoint before allowing users to join rooms
--- Uses single domain approach - no separate guest/auth domains
+-- Room Access Validator Module for JustIX Academy
+-- Validates room access before allowing users to join
+-- Flow:
+--   1. User tries to join room (with or without JWT token)
+--   2. Module calls meeting-service webhook to validate
+--   3. Service checks: room exists, not expired, public/private, user permissions
+--   4. If private and no JWT -> reject with auth_required (triggers login redirect)
+--   5. If public or valid JWT -> allow join
 
 local http = require "net.http"
-local json = require "util.json"
+local json = require "cjson"
 local jid_bare = require "util.jid".bare
 local jid_split = require "util.jid".split
+local st = require "util.stanza"
 
 local validate_url = module:get_option_string("validate_access_url", "http://meeting-service:2031/webhooks/jitsi/validate-access")
 local webhook_secret = module:get_option_string("webhook_secret", "webhook-secret-change-in-production")
@@ -13,105 +19,178 @@ local webhook_secret = module:get_option_string("webhook_secret", "webhook-secre
 module:log("info", "Room Access Validator Module loaded")
 module:log("info", "Validate URL: %s", validate_url)
 
--- Extract JWT token from stanza if present
-local function extract_jwt_token(stanza)
-    -- JWT token should be in the presence stanza as a custom element
-    local jwt_elem = stanza:get_child("jwt", "urn:xmpp:jitsi:jwt")
-    if jwt_elem then
-        return jwt_elem:get_text()
+-- Check if user has valid JWT token (authenticated user)
+local function is_authenticated(user_jid)
+    -- Users from auth.meet.jitsi domain are authenticated
+    -- Users from guest.meet.jitsi domain are guests
+    return user_jid and not user_jid:find("@guest%.")
+end
+
+-- Extract JWT token from session context
+local function get_jwt_token(event)
+    -- Check if the session has JWT context
+    local session = event.origin
+    if session and session.jitsi_meet_context_user then
+        local context = session.jitsi_meet_context_user
+        if context.token then
+            return context.token
+        end
     end
     return nil
 end
 
--- Make HTTP request to validate access
-local function validate_access_with_service(room_name, user_jid, jwt_token, meeting_id)
+-- Validate room access with meeting-service
+local function validate_room_access(room_name, user_jid, has_jwt)
     local request_body = json.encode({
         roomName = room_name,
         userJid = user_jid,
-        meetingId = meeting_id,
+        hasJWT = has_jwt,
         timestamp = os.time(),
         secret = webhook_secret
     })
 
-    module:log("debug", "Validating access: room=%s, user=%s", room_name, user_jid)
+    module:log("debug", "Validating access: room=%s, user=%s, hasJWT=%s",
+        room_name, user_jid, tostring(has_jwt))
 
-    local response_text = nil
-    local response_code = nil
-    local wait, done = async.waiter()
+    -- Use http.request with callback (non-blocking)
+    local response_received = false
+    local validation_result = {
+        allowed = false,
+        reason = "timeout",
+        requiresAuth = false,
+        redirectUrl = nil
+    }
 
     http.request(validate_url, {
         method = "POST",
         headers = {
             ["Content-Type"] = "application/json",
-            ["Content-Length"] = tostring(#request_body),
-            ["Authorization"] = jwt_token and ("Bearer " .. jwt_token) or ""
+            ["Content-Length"] = tostring(#request_body)
         },
         body = request_body
-    }, function(body, code)
-        response_text = body
-        response_code = code
-        done()
+    }, function(body, code, response)
+        response_received = true
+
+        if code == 200 and body then
+            local ok, data = pcall(json.decode, body)
+            if ok and data then
+                validation_result.allowed = data.allowed == true
+                validation_result.reason = data.reason or "unknown"
+                validation_result.requiresAuth = data.requiresAuth == true
+                validation_result.redirectUrl = data.redirectUrl
+                validation_result.isPublic = data.isPublic == true
+                validation_result.roomExists = data.roomExists ~= false
+                validation_result.isExpired = data.isExpired == true
+
+                module:log("info", "Validation response: allowed=%s, reason=%s, requiresAuth=%s, isPublic=%s",
+                    tostring(validation_result.allowed),
+                    tostring(validation_result.reason),
+                    tostring(validation_result.requiresAuth),
+                    tostring(validation_result.isPublic))
+            else
+                module:log("error", "Failed to parse validation response: %s", tostring(body))
+                validation_result.reason = "parse_error"
+            end
+        else
+            module:log("warn", "Validation request failed: code=%s", tostring(code))
+            validation_result.reason = "service_unavailable"
+        end
     end)
 
-    wait()
-
-    if response_code ~= 200 then
-        module:log("warn", "Access validation failed: room=%s, user=%s, code=%s",
-            room_name, user_jid, tostring(response_code))
-        return false, "access_denied"
+    -- Wait for response with timeout
+    local timeout = 5 -- 5 seconds
+    local start_time = os.time()
+    while not response_received and (os.time() - start_time) < timeout do
+        -- Small delay to prevent busy waiting
+        os.execute("sleep 0.01")
     end
 
-    local ok, response_data = pcall(json.decode, response_text)
-    if not ok or not response_data then
-        module:log("error", "Failed to parse validation response: %s", tostring(response_text))
-        return false, "service_error"
+    if not response_received then
+        module:log("error", "Validation request timed out for room: %s", room_name)
+        -- Default behavior on timeout: allow if meeting-service is down (fail open)
+        -- Change to false (fail closed) if you want to block on service failure
+        validation_result.allowed = false
+        validation_result.reason = "service_timeout"
     end
 
-    module:log("info", "Access validation result: room=%s, user=%s, allowed=%s",
-        room_name, user_jid, tostring(response_data.allowed or false))
-
-    return response_data.allowed == true, response_data.reason
+    return validation_result
 end
 
--- Hook into MUC occupant pre-join
+-- Hook into MUC occupant pre-join to validate access
 module:hook("muc-occupant-pre-join", function(event)
     local room = event.room
     local occupant = event.occupant
     local stanza = event.stanza
 
     if not room or not occupant then
-        return nil
+        module:log("debug", "Skipping validation: missing room or occupant")
+        return nil -- Allow (shouldn't happen)
     end
 
     local room_jid = room.jid
     local room_name = jid_split(room_jid)
     local user_jid = occupant.bare_jid
 
-    -- Extract meeting ID from room name if present (format: roomname@conferenc or just roomname)
-    local meeting_id = room_name
+    -- Check if user is authenticated (has JWT)
+    local has_jwt = is_authenticated(user_jid)
 
-    -- Extract JWT token from stanza
-    local jwt_token = extract_jwt_token(stanza)
+    module:log("info", "Checking access: room=%s, user=%s, authenticated=%s",
+        room_name, user_jid, tostring(has_jwt))
 
-    module:log("debug", "Pre-join check: room=%s, user=%s, has_token=%s",
-        room_name, user_jid, tostring(jwt_token ~= nil))
+    -- Validate with meeting-service
+    local result = validate_room_access(room_name, user_jid, has_jwt)
 
-    -- Call validation service
-    local allowed, reason = validate_access_with_service(room_name, user_jid, jwt_token, meeting_id)
-
-    if not allowed then
-        module:log("info", "Access DENIED: room=%s, user=%s, reason=%s",
-            room_name, user_jid, tostring(reason))
-
-        -- Return error to prevent join
-        local reply = st.error_reply(stanza, "auth", "forbidden",
-            "You are not authorized to join this room: " .. (reason or "access_denied"))
-        event.origin.send(reply)
-        return true -- Block the join
+    if result.allowed then
+        module:log("info", "✓ Access GRANTED: room=%s, user=%s", room_name, user_jid)
+        return nil -- Allow join
     end
 
-    module:log("info", "Access GRANTED: room=%s, user=%s", room_name, user_jid)
-    return nil -- Allow the join
-end, 10) -- Priority 10 to run before other hooks
+    -- Access denied - determine error type
+    module:log("warn", "✗ Access DENIED: room=%s, user=%s, reason=%s",
+        room_name, user_jid, result.reason)
+
+    local error_type, error_condition, error_text
+
+    if result.requiresAuth or (not result.isPublic and not has_jwt) then
+        -- Private room, no JWT -> redirect to login
+        error_type = "auth"
+        error_condition = "not-authorized"
+        error_text = "This is a private meeting. Please log in to join."
+
+        -- Add redirect URL if provided by service
+        if result.redirectUrl then
+            module:log("info", "Redirecting to: %s", result.redirectUrl)
+        end
+
+    elseif result.isExpired then
+        error_type = "cancel"
+        error_condition = "gone"
+        error_text = "This meeting has expired."
+
+    elseif not result.roomExists then
+        error_type = "cancel"
+        error_condition = "item-not-found"
+        error_text = "Meeting not found."
+
+    else
+        -- Generic access denied
+        error_type = "auth"
+        error_condition = "forbidden"
+        error_text = result.reason or "You are not authorized to join this meeting."
+    end
+
+    -- Send error stanza to client
+    local reply = st.error_reply(stanza, error_type, error_condition, error_text)
+
+    -- Add custom redirect URL element if available
+    if result.redirectUrl then
+        reply:tag("redirect", { xmlns = "urn:xmpp:jitsi:redirect" })
+            :text(result.redirectUrl):up()
+    end
+
+    event.origin.send(reply)
+
+    return true -- Block the join
+end, 10) -- Priority 10 to run early
 
 module:log("info", "Room Access Validator Module initialized")

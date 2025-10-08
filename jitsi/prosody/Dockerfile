@@ -15,15 +15,18 @@ RUN rm -f /etc/apt/sources.list.d/prosody.list && \
         lua-socket \
     && rm -rf /var/lib/apt/lists/*
 
-# Create custom plugins directory (use different path to avoid volume conflict)
-RUN mkdir -p /usr/share/jitsi-meet/prosody-plugins-extra && \
-    chown prosody:prosody /usr/share/jitsi-meet/prosody-plugins-extra
+# Use the standard Jitsi prosody-plugins-custom directory
+# This directory is automatically added to plugin_paths by Jitsi's entrypoint
+RUN mkdir -p /prosody-plugins-custom && \
+    chown prosody:prosody /prosody-plugins-custom
 
-# Copy custom modules into image
-COPY mod_jitsi_webhooks_enhanced.lua /usr/share/jitsi-meet/prosody-plugins-extra/mod_jitsi_webhooks_enhanced.lua
-COPY mod_room_auth_check.lua /usr/share/jitsi-meet/prosody-plugins-extra/mod_room_auth_check.lua
+# Copy custom modules into the standard custom plugins directory
+COPY mod_jitsi_webhooks_enhanced.lua /prosody-plugins-custom/mod_jitsi_webhooks_enhanced.lua
+COPY mod_room_auth_check.lua /prosody-plugins-custom/mod_room_auth_check.lua
+COPY mod_room_access_validator.lua /prosody-plugins-custom/mod_room_access_validator.lua
 
 # Set correct permissions
-RUN chmod 644 /usr/share/jitsi-meet/prosody-plugins-extra/mod_jitsi_webhooks_enhanced.lua && \
-    chmod 644 /usr/share/jitsi-meet/prosody-plugins-extra/mod_room_auth_check.lua && \
-    chown prosody:prosody /usr/share/jitsi-meet/prosody-plugins-extra/*.lua
+RUN chmod 644 /prosody-plugins-custom/mod_jitsi_webhooks_enhanced.lua && \
+    chmod 644 /prosody-plugins-custom/mod_room_auth_check.lua && \
+    chmod 644 /prosody-plugins-custom/mod_room_access_validator.lua && \
+    chown prosody:prosody /prosody-plugins-custom/*.lua

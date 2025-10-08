@@ -2,6 +2,14 @@
 // This file contains configuration that disables default Jitsi recording UI
 // and enforces backend-controlled recording logic
 
+// Force HTTP for local development (override generated config.js)
+// This fixes the "You have been disconnected" error when DISABLE_HTTPS=1
+// Use window.location.protocol to match the page protocol
+var protocol = window.location.protocol === 'https:' ? 'https:' : 'http:';
+var wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+config.bosh = protocol + '//' + window.location.host + '/http-bind';
+config.websocket = wsProtocol + '//' + window.location.host + '/xmpp-websocket';
+
 // RoomConfiguration settings injection from backend (via JWT or API)
 // These settings can be overridden dynamically when room config is loaded
 // Format: window.ROOM_CONFIG = { ... } will override these defaults
