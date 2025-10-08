@@ -1,0 +1,57 @@
+/* Custom styles for LearnX */
+
+/* Primary brand colors */
+:root {
+    --learnx-primary: #8a2be2;      /* Purple (BlueViolet) */
+    --learnx-primary-dark: #6a1bb2; /* Dark purple */
+    --learnx-bg-dark: #000000;      /* Black background */
+    --learnx-bg-light: #1a1a1a;     /* Dark gray background */
+    --learnx-accent: #9932cc;       /* Dark orchid accent */
+    --learnx-text: #e8e8e8;         /* Light text */
+}
+
+/* Purple theme for buttons and accents - keeping original Jitsi layout */
+
+/* Buttons with purple color */
+.toolbox-button,
+button[class*="button"],
+.action-button {
+    background-color: var(--learnx-primary) !important;
+}
+
+.toolbox-button:hover,
+button[class*="button"]:hover,
+.action-button:hover {
+    background-color: var(--learnx-primary-dark) !important;
+}
+
+/* Primary action buttons */
+button.primary,
+.button-primary,
+[class*="PrimaryButton"] {
+    background-color: var(--learnx-primary) !important;
+    border-color: var(--learnx-primary) !important;
+}
+
+button.primary:hover,
+.button-primary:hover,
+[class*="PrimaryButton"]:hover {
+    background-color: var(--learnx-primary-dark) !important;
+}
+
+/* Active/toggled buttons */
+.toolbox-button.toggled,
+[class*="toggled"] {
+    background-color: var(--learnx-primary-dark) !important;
+}
+
+/* Join/Start meeting button */
+[class*="prejoin"] button[class*="primary"],
+[class*="ActionButton"] {
+    background-color: var(--learnx-primary) !important;
+}
+
+[class*="prejoin"] button[class*="primary"]:hover,
+[class*="ActionButton"]:hover {
+    background-color: var(--learnx-primary-dark) !important;
+}

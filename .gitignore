@@ -25,4 +25,33 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Runtime Data ###
 /data/
+
+### Jitsi Custom Images ###
+# Keep Dockerfiles and custom scripts (versioned)
+# Everything else is auto-generated or baked into images
+!jitsi/prosody/Dockerfile
+!jitsi/prosody/mod_jitsi_webhooks_enhanced.lua
+!jitsi/jibri/Dockerfile
+!jitsi/jibri/finalize-script.sh
+!jitsi/web/Dockerfile
+!jitsi/web/interface_config.js
+!jitsi/web/custom-config.js
+!jitsi/web/custom-styles.css
+
+### Backup Files ###
+*.backup
+compose.yml.backup
+
+### macOS ###
+.DS_Store
+.AppleDouble
+.LSOverride
+
+### Environment Variables ###
+# Keep .env.example for reference, ignore actual .env
+.env
+.env.local
+.env.*.local

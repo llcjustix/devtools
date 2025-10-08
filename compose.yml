@@ -184,134 +184,134 @@ services:
       - infra-network
 
   #------------------------------------------ JITSI MEET STACK ---------------------------------------------------------
-  # Jitsi Meet Web UI
-  jitsi-web:
-    image: jitsi/web:stable-9258
-    container_name: jitsi-web
-    restart: unless-stopped
-    ports:
-      - "8443:80"
-    environment:
-      - ENABLE_AUTH=1
-      - ENABLE_GUESTS=0
-      - AUTH_TYPE=jwt
-      - JWT_APP_ID=${JITSI_JWT_APP_ID:-meeting-app}
-      - JWT_APP_SECRET=${JITSI_JWT_APP_SECRET:-your-secret-key-here}
-      - JWT_ACCEPTED_ISSUERS=${JITSI_JWT_ISSUER:-meeting-app}
-      - JWT_ACCEPTED_AUDIENCES=${JITSI_JWT_AUDIENCE:-meeting-app}
-      - JWT_ALLOW_EMPTY=0
-      - XMPP_DOMAIN=meet.jitsi
-      - XMPP_AUTH_DOMAIN=auth.meet.jitsi
-      - XMPP_BOSH_URL_BASE=http://prosody:5280
-      - XMPP_MUC_DOMAIN=conference.meet.jitsi
-      - XMPP_INTERNAL_MUC_DOMAIN=internal-muc.meet.jitsi
-      - XMPP_RECORDER_DOMAIN=recorder.meet.jitsi
-      - ENABLE_RECORDING=1
-      - ENABLE_LOBBY=1
-      - PUBLIC_URL=http://localhost:8443
-      - TZ=UTC
-    volumes:
-      - ./jitsi-config/web:/config:Z
-    networks:
-      - infra-network
-    depends_on:
-      - prosody
-      - jicofo
-      - jvb
-
-  # Prosody XMPP Server
-  prosody:
-    image: jitsi/prosody:stable-9258
-    container_name: prosody
+  # Custom Prosody with webhook module (built from Dockerfile)
+  jitsi-prosody:
+    build:
+      context: ./jitsi/prosody
+      dockerfile: Dockerfile
+    image: justix/jitsi-prosody:latest
+    container_name: jitsi-prosody
     restart: unless-stopped
     expose:
-      - "5222"
-      - "5347"
-      - "5280"
+      - '5222'
+      - '5347'
+      - '5280'
     environment:
       - ENABLE_AUTH=1
-      - ENABLE_GUESTS=0
+      - ENABLE_GUESTS=1
       - AUTH_TYPE=jwt
-      - JWT_APP_ID=${JITSI_JWT_APP_ID:-meeting-app}
-      - JWT_APP_SECRET=${JITSI_JWT_APP_SECRET:-your-secret-key-here}
+      - JWT_APP_ID=jitsi
+      - JWT_APP_SECRET=${JWT_APP_SECRET}
       - XMPP_DOMAIN=meet.jitsi
       - XMPP_AUTH_DOMAIN=auth.meet.jitsi
-      - XMPP_MUC_DOMAIN=conference.meet.jitsi
+      - XMPP_MUC_DOMAIN=muc.meet.jitsi
       - XMPP_INTERNAL_MUC_DOMAIN=internal-muc.meet.jitsi
-      - XMPP_RECORDER_DOMAIN=recorder.meet.jitsi
-      - JIBRI_RECORDER_USER=recorder
-      - JIBRI_RECORDER_PASSWORD=${JIBRI_RECORDER_PASSWORD:-jibri-recorder-pass}
-      - JIBRI_XMPP_USER=jibri
-      - JIBRI_XMPP_PASSWORD=${JIBRI_XMPP_PASSWORD:-jibri-xmpp-pass}
-      - JICOFO_COMPONENT_SECRET=${JICOFO_COMPONENT_SECRET:-jicofo-secret}
-      - JICOFO_AUTH_USER=focus
-      - JICOFO_AUTH_PASSWORD=${JICOFO_AUTH_PASSWORD:-jicofo-pass}
-      - JVB_AUTH_USER=jvb
-      - JVB_AUTH_PASSWORD=${JVB_AUTH_PASSWORD:-jvb-pass}
-      - JITSI_WEBHOOK_URL=${JITSI_WEBHOOK_URL:-http://localhost:2031/webhooks/jitsi}
-      - JITSI_WEBHOOK_SECRET=${JITSI_WEBHOOK_SECRET:-webhook-secret}
+      - XMPP_GUEST_DOMAIN=guest.meet.jitsi
+      - JICOFO_COMPONENT_SECRET=${JICOFO_COMPONENT_SECRET}
+      - JICOFO_AUTH_PASSWORD=${JICOFO_AUTH_PASSWORD}
+      - JVB_AUTH_PASSWORD=${JVB_AUTH_PASSWORD}
+      - JIBRI_RECORDER_PASSWORD=${JIBRI_RECORDER_PASSWORD}
+      - JIBRI_XMPP_PASSWORD=${JIBRI_XMPP_PASSWORD}
       - TZ=UTC
+      # Load custom webhook module
+      - GLOBAL_MODULES=jitsi_webhooks_enhanced
+      - GLOBAL_CONFIG=jitsi_webhook_url = "${JITSI_WEBHOOK_URL}"\njitsi_webhook_secret = "${JITSI_WEBHOOK_SECRET}"
+      # Room access validation
+      - PROSODY_PLUGINS_PATH=/usr/share/jitsi-meet/prosody-plugins-extra
     volumes:
-      - ./jitsi-config/prosody:/config:Z
-      - ./jitsi-config/prosody-modules:/prosody-plugins-custom:Z
+      - jitsi-prosody-config:/config
     networks:
       - infra-network
 
-  # Jicofo (Jitsi Conference Focus)
-  jicofo:
+  # Jicofo (conference focus)
+  jitsi-jicofo:
     image: jitsi/jicofo:stable-9258
-    container_name: jicofo
+    container_name: jitsi-jicofo
     restart: unless-stopped
     environment:
+      - XMPP_SERVER=jitsi-prosody
       - XMPP_DOMAIN=meet.jitsi
       - XMPP_AUTH_DOMAIN=auth.meet.jitsi
+      - XMPP_MUC_DOMAIN=muc.meet.jitsi
       - XMPP_INTERNAL_MUC_DOMAIN=internal-muc.meet.jitsi
-      - XMPP_MUC_DOMAIN=conference.meet.jitsi
-      - XMPP_SERVER=prosody
-      - JICOFO_COMPONENT_SECRET=${JICOFO_COMPONENT_SECRET:-jicofo-secret}
-      - JICOFO_AUTH_USER=focus
-      - JICOFO_AUTH_PASSWORD=${JICOFO_AUTH_PASSWORD:-jicofo-pass}
+      - JICOFO_COMPONENT_SECRET=${JICOFO_COMPONENT_SECRET}
+      - JICOFO_AUTH_PASSWORD=${JICOFO_AUTH_PASSWORD}
       - JVB_BREWERY_MUC=jvbbrewery
       - JIBRI_BREWERY_MUC=jibribrewery
-      - ENABLE_RECORDING=1
+      - JIBRI_PENDING_TIMEOUT=90
       - TZ=UTC
-    volumes:
-      - ./jitsi-config/jicofo:/config:Z
+    depends_on:
+      - jitsi-prosody
     networks:
       - infra-network
-    depends_on:
-      - prosody
 
-  # JVB (Jitsi Videobridge)
-  jvb:
+  # JVB (video bridge)
+  jitsi-jvb:
     image: jitsi/jvb:stable-9258
-    container_name: jvb
+    container_name: jitsi-jvb
     restart: unless-stopped
     ports:
       - "10000:10000/udp"
       - "4443:4443"
     environment:
+      - XMPP_SERVER=jitsi-prosody
       - XMPP_DOMAIN=meet.jitsi
       - XMPP_AUTH_DOMAIN=auth.meet.jitsi
       - XMPP_INTERNAL_MUC_DOMAIN=internal-muc.meet.jitsi
-      - XMPP_SERVER=prosody
-      - JVB_AUTH_USER=jvb
-      - JVB_AUTH_PASSWORD=${JVB_AUTH_PASSWORD:-jvb-pass}
+      - JVB_AUTH_PASSWORD=${JVB_AUTH_PASSWORD}
       - JVB_BREWERY_MUC=jvbbrewery
+      - JVB_STUN_SERVERS=stun.l.google.com:19302
+      - DOCKER_HOST_ADDRESS=${DOCKER_HOST_ADDRESS}
       - JVB_PORT=10000
-      - PUBLIC_URL=http://localhost:8443
+      - JVB_TCP_HARVESTER_DISABLED=true
       - TZ=UTC
-    volumes:
-      - ./jitsi-config/jvb:/config:Z
+    depends_on:
+      - jitsi-prosody
     networks:
       - infra-network
-    depends_on:
-      - prosody
 
-  # Jibri (Jitsi Recording)
-  jibri:
-    image: jitsi/jibri:stable-9258
-    container_name: jibri
+  # Custom Web interface with branding and recording config
+  jitsi-web:
+    build:
+      context: ./jitsi/web
+      dockerfile: Dockerfile
+    image: justix/jitsi-web:latest
+    container_name: jitsi-web
+    restart: unless-stopped
+    ports:
+      - "8443:443"
+      - "8001:80"
+    environment:
+      - ENABLE_AUTH=1
+      - ENABLE_GUESTS=1
+      - AUTH_TYPE=jwt
+      - JWT_APP_ID=jitsi
+      - JWT_APP_SECRET=${JWT_APP_SECRET}
+      - XMPP_DOMAIN=meet.jitsi
+      - XMPP_AUTH_DOMAIN=auth.meet.jitsi
+      - XMPP_MUC_DOMAIN=muc.meet.jitsi
+      - XMPP_BOSH_URL_BASE=http://jitsi-prosody:5280
+      - JICOFO_AUTH_PASSWORD=${JICOFO_AUTH_PASSWORD}
+      - PUBLIC_URL=${PUBLIC_URL}
+      - ENABLE_RECORDING=1
+      - DROPBOX_APPKEY=""
+      - DROPBOX_REDIRECT_URI=""
+      - ENABLE_FILE_RECORDING_SERVICE=0
+      - ENABLE_TRANSCRIPTIONS=0
+      - DISABLE_HTTPS=0
+      - TZ=UTC
+    depends_on:
+      - jitsi-prosody
+    networks:
+      - infra-network
+
+  # Custom Jibri with finalize script (built from Dockerfile)
+  jitsi-jibri:
+    build:
+      context: ./jitsi/jibri
+      dockerfile: Dockerfile
+    image: justix/jitsi-jibri:latest
+    container_name: jitsi-jibri
     restart: unless-stopped
     privileged: true
     environment:
@@ -319,23 +319,34 @@ services:
       - XMPP_AUTH_DOMAIN=auth.meet.jitsi
       - XMPP_INTERNAL_MUC_DOMAIN=internal-muc.meet.jitsi
       - XMPP_RECORDER_DOMAIN=recorder.meet.jitsi
-      - XMPP_SERVER=prosody
-      - JIBRI_RECORDER_USER=recorder
-      - JIBRI_RECORDER_PASSWORD=${JIBRI_RECORDER_PASSWORD:-jibri-recorder-pass}
-      - JIBRI_XMPP_USER=jibri
-      - JIBRI_XMPP_PASSWORD=${JIBRI_XMPP_PASSWORD:-jibri-xmpp-pass}
+      - XMPP_SERVER=jitsi-prosody
       - JIBRI_BREWERY_MUC=jibribrewery
-      - JIBRI_RECORDING_DIR=/config/recordings
-      - PUBLIC_URL=http://localhost:8443
+      - JIBRI_RECORDER_PASSWORD=${JIBRI_RECORDER_PASSWORD}
+      - JIBRI_XMPP_PASSWORD=${JIBRI_XMPP_PASSWORD}
+      - JIBRI_RECORDING_DIR=/tmp/recordings
+      - JIBRI_FINALIZE_RECORDING_SCRIPT_PATH=/usr/local/bin/jibri-finalize.sh
+      - JIBRI_STRIP_DOMAIN_JID=muc
+      - JIBRI_LOGS_DIR=/var/log/jibri
+      - DISPLAY=:0
       - TZ=UTC
     volumes:
-      - ./jitsi-config/jibri:/config:Z
-      - ./data/jitsi-recordings:/config/recordings:Z
-      - /dev/shm:/dev/shm
+      - jitsi-jibri-recordings:/tmp/recordings
+      - jitsi-jibri-logs:/var/log/jibri
+    depends_on:
+      - jitsi-prosody
+      - jitsi-jicofo
     networks:
       - infra-network
-    depends_on:
-      - prosody
+    shm_size: '2gb'
+
+#---------------------------------------------- Volumes ---------------------------------------------------------------
+volumes:
+  jitsi-prosody-config:
+    driver: local
+  jitsi-jibri-recordings:
+    driver: local
+  jitsi-jibri-logs:
+    driver: local
 
 #---------------------------------------------- Networks ---------------------------------------------------------------
 networks:
