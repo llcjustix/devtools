@@ -12,17 +12,20 @@
 
 /* Purple theme for buttons and accents - keeping original Jitsi layout */
 
-/* Buttons with purple color */
+/* Default toolbar buttons - purple when active/unmuted */
 .toolbox-button,
-button[class*="button"],
-.action-button {
-    background-color: var(--learnx-primary) !important;
+button[class*="toolbox-button"],
+.action-button,
+div[class*="Toolbox"] button {
+    background-color: rgba(138, 43, 226, 0.7) !important; /* Semi-transparent purple */
+    transition: background-color 0.2s ease !important;
 }
 
 .toolbox-button:hover,
-button[class*="button"]:hover,
-.action-button:hover {
-    background-color: var(--learnx-primary-dark) !important;
+button[class*="toolbox-button"]:hover,
+.action-button:hover,
+div[class*="Toolbox"] button:hover {
+    background-color: var(--learnx-primary) !important;
 }
 
 /* Primary action buttons */
@@ -39,10 +42,30 @@ button.primary:hover,
     background-color: var(--learnx-primary-dark) !important;
 }
 
-/* Active/toggled buttons */
+/* Active/toggled buttons (when feature is ON) */
 .toolbox-button.toggled,
-[class*="toggled"] {
+[class*="toggled"],
+.toolbox-button[aria-pressed="true"],
+button[aria-pressed="true"] {
     background-color: var(--learnx-primary-dark) !important;
+}
+
+/* Muted/disabled buttons (when feature is OFF) - Red color */
+.toolbox-button.audio-mute,
+.toolbox-button.video-mute,
+button[class*="audio-mute"],
+button[class*="video-mute"],
+.toolbox-button[class*="disabled"],
+button.disabled {
+    background-color: #dc3545 !important; /* Red for muted/disabled */
+}
+
+/* Hover on muted buttons */
+.toolbox-button.audio-mute:hover,
+.toolbox-button.video-mute:hover,
+button[class*="audio-mute"]:hover,
+button[class*="video-mute"]:hover {
+    background-color: #c82333 !important; /* Darker red */
 }
 
 /* Join/Start meeting button */
@@ -54,4 +77,109 @@ button.primary:hover,
 [class*="prejoin"] button[class*="primary"]:hover,
 [class*="ActionButton"]:hover {
     background-color: var(--learnx-primary-dark) !important;
+}
+
+/* ========================================
+   TOOLBAR BUTTON STATES (Video, Audio, etc.)
+   ======================================== */
+
+/* Default state - Gray/Inactive */
+div[class*="Toolbox"] button:not(.toggled):not([class*="active"]) {
+    background-color: rgba(255, 255, 255, 0.1) !important; /* Light gray */
+}
+
+/* Active/Enabled state - Purple (when video/audio is ON) */
+div[class*="Toolbox"] button.toggled,
+div[class*="Toolbox"] button[class*="active"],
+button[data-testid*="mute"]:not([class*="muted"]),
+button[data-testid*="video"]:not([class*="muted"]) {
+    background-color: var(--learnx-primary) !important; /* Purple when active */
+}
+
+/* Disabled/Muted state - Red (when video/audio is OFF) */
+div[class*="Toolbox"] button[class*="muted"],
+div[class*="Toolbox"] button[class*="disabled"],
+button[data-testid*="mute"][class*="muted"],
+button[data-testid*="video"][class*="muted"],
+.audio-preview button[aria-label*="Muted"],
+.video-preview button[aria-label*="Stop"] {
+    background-color: #dc3545 !important; /* Red when muted/off */
+}
+
+/* Hover states */
+div[class*="Toolbox"] button:hover {
+    opacity: 0.9 !important;
+    transform: scale(1.05) !important;
+    transition: all 0.2s ease !important;
+}
+
+/* Specific button selectors for audio/video */
+/* Audio button - when unmuted (purple) */
+button[aria-label*="Mute audio"]:not([class*="muted"]),
+button[aria-label*="Unmute"]:not([class*="muted"]) {
+    background-color: var(--learnx-primary) !important;
+}
+
+/* Audio button - when muted (red) */
+button[aria-label*="Unmute audio"],
+button[class*="audio"][class*="muted"] {
+    background-color: #dc3545 !important;
+}
+
+/* Video button - when enabled (purple) */
+button[aria-label*="Stop camera"]:not([class*="muted"]),
+button[aria-label*="Start camera"]:not([class*="muted"]) {
+    background-color: var(--learnx-primary) !important;
+}
+
+/* Video button - when disabled (red) */
+button[aria-label*="Start camera"],
+button[class*="video"][class*="muted"] {
+    background-color: #dc3545 !important;
+}
+
+/* Share screen button - active state */
+button[aria-label*="Stop sharing"],
+button[class*="desktop"][class*="toggled"] {
+    background-color: var(--learnx-primary-dark) !important;
+}
+
+/* Raise hand button - active state */
+button[aria-label*="Lower hand"],
+button[class*="raisehand"][class*="toggled"] {
+    background-color: #ffc107 !important; /* Yellow when hand is raised */
+}
+
+/* Chat/Participants buttons - active state */
+button[class*="chat-counter"],
+button[class*="participants-pane"] {
+    background-color: var(--learnx-primary) !important;
+}
+
+/* Reactions button - active state */
+button[class*="reactions"][class*="toggled"] {
+    background-color: var(--learnx-primary-dark) !important;
+}
+
+/* ========================================
+   UNIVERSAL BUTTON STATE STYLES
+   ======================================== */
+
+/* Force color change on click/active */
+div[class*="Toolbox"] button:active,
+button[class*="toolbox-button"]:active {
+    background-color: var(--learnx-primary-dark) !important;
+    transform: scale(0.95) !important;
+}
+
+/* Ensure transitions work */
+div[class*="Toolbox"] button,
+button[class*="toolbox-button"] {
+    transition: background-color 0.2s ease, transform 0.1s ease !important;
+}
+
+/* Override any conflicting Jitsi styles */
+div[class*="Toolbox"] > * button,
+div[class*="toolbox-content"] button {
+    background-color: inherit !important;
 }

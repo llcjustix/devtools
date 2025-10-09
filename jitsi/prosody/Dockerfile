@@ -22,11 +22,13 @@ RUN mkdir -p /prosody-plugins-custom && \
 
 # Copy custom modules into the standard custom plugins directory
 COPY mod_jitsi_webhooks_enhanced.lua /prosody-plugins-custom/mod_jitsi_webhooks_enhanced.lua
-COPY mod_room_auth_check.lua /prosody-plugins-custom/mod_room_auth_check.lua
 COPY mod_room_access_validator.lua /prosody-plugins-custom/mod_room_access_validator.lua
+
+# Copy and run script to patch the jitsi-meet.cfg.lua template
+COPY patch-muc-config.sh /tmp/patch-muc-config.sh
+RUN chmod +x /tmp/patch-muc-config.sh && /tmp/patch-muc-config.sh && rm /tmp/patch-muc-config.sh
 
 # Set correct permissions
 RUN chmod 644 /prosody-plugins-custom/mod_jitsi_webhooks_enhanced.lua && \
-    chmod 644 /prosody-plugins-custom/mod_room_auth_check.lua && \
     chmod 644 /prosody-plugins-custom/mod_room_access_validator.lua && \
     chown prosody:prosody /prosody-plugins-custom/*.lua

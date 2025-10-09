@@ -4,18 +4,38 @@
 local json = require("cjson.safe")
 local http = require("socket.http")
 local ltn12 = require("ltn12")
+local hmac_sha256 = require("util.hashes").hmac_sha256
+local b64_encode = require("util.encodings").base64.encode
 
--- Configuration
-local webhook_base_url = module:get_option_string("jitsi_webhook_url", "http://meeting-service:2031/webhooks/jitsi")
-local webhook_secret = module:get_option_string("jitsi_webhook_secret", "")
+-- Utility function to extract room name from JID
+local function get_room_name(room_jid)
+    -- room_jid format: "roomname@muc.meet.jitsi"
+    -- Extract just the room name (node part before @)
+    local node = room_jid:match("^([^@]+)@")
+    return node or room_jid
+end
+
+-- Configuration from environment variables or Prosody config
+local meeting_service_url = os.getenv("MEETING_SERVICE_URL") or module:get_option_string("meeting_service_url", "http://localhost:2031")
+local webhook_base_url = meeting_service_url .. "/webhooks/jitsi"
+local webhook_secret = os.getenv("JITSI_WEBHOOK_SECRET") or module:get_option_string("jitsi_webhook_secret", "")
 
 module:log("info", "Enhanced Jitsi Webhooks Module loaded")
 module:log("info", "Webhook URL: %s", webhook_base_url)
+
+-- Compute HMAC-SHA256 signature for webhook authentication
+local function compute_hmac_signature(payload, secret)
+    local signature = hmac_sha256(payload, secret, true) -- true = return binary
+    return b64_encode(signature)
+end
 
 -- Utility: Send webhook
 local function send_webhook(endpoint, payload)
     local url = webhook_base_url .. endpoint
     local request_body = json.encode(payload)
+
+    -- Compute HMAC signature
+    local signature = compute_hmac_signature(request_body, webhook_secret)
 
     local response_body = {}
     local res, code, response_headers = http.request({
@@ -24,7 +44,7 @@ local function send_webhook(endpoint, payload)
         headers = {
             ["Content-Type"] = "application/json",
             ["Content-Length"] = tostring(#request_body),
-            ["X-Webhook-Secret"] = webhook_secret
+            ["X-Webhook-Signature"] = signature
         },
         source = ltn12.source.string(request_body),
         sink = ltn12.sink.table(response_body)
@@ -39,144 +59,103 @@ local function send_webhook(endpoint, payload)
     end
 end
 
--- Event: Room Created
-module:hook("muc-room-created", function(event)
-    local room = event.room
-    local room_jid = room.jid
-    local room_name = jid.split(room_jid)
-
-    module:log("info", "Room created: %s", room_name)
-
-    send_webhook("/room-created", {
-        roomName = room_name,
-        timestamp = os.time()
-    })
-end, 10)
-
--- Event: Validate Room Access
-module:hook("muc-occupant-pre-join", function(event)
-    local room = event.room
-    local occupant = event.occupant
-    local stanza = event.stanza
-
-    local room_jid = room.jid
-    local room_name = jid.split(room_jid)
-    local user_jid = occupant.bare_jid
-    local user_name = jid.split(user_jid)
-
-    -- Extract JWT token from presence
-    local jwt_token = nil
-    local x = stanza:get_child("x", "http://jitsi.org/jitmeet/user-info")
-    if x then
-        jwt_token = x:get_child_text("jwt")
-    end
-
-    module:log("info", "Access validation for user %s in room %s", user_name, room_name)
-
-    local success, response_body = send_webhook("/validate-access", {
-        roomName = room_name,
-        userId = user_name,
-        userJid = user_jid,
-        jwtToken = jwt_token,
-        timestamp = os.time()
-    })
-
-    if success and response_body then
-        local response = json.decode(response_body)
-        if response then
-            -- Store room configuration from backend
-            if response.roomConfiguration then
-                room._data.backend_config = response.roomConfiguration
-
-                -- Build recording upload config from flat fields
-                local room_config = response.roomConfiguration
-                room._data.recording_upload_config = {
-                    meetingId = room_config.recordingMeetingId,
-                    fileServiceUrl = room_config.recordingFileServiceUrl,
-                    uploadPath = room_config.recordingUploadPath,
-                    bucket = room_config.recordingBucket,
-                    storagePath = room_config.recordingStoragePath
-                }
-
-                module:log("info", "Room configuration received for %s (meetingId=%s)", room_name, room_config.recordingMeetingId)
-
-                -- Enforce Prosody MUC room settings from backend
-                if room_config.membersOnly ~= nil then
-                    room:set_members_only(room_config.membersOnly)
-                    module:log("info", "Set members_only=%s for room %s", tostring(room_config.membersOnly), room_name)
-                end
-
-                if room_config.moderated ~= nil then
-                    room:set_moderated(room_config.moderated)
-                    module:log("info", "Set moderated=%s for room %s", tostring(room_config.moderated), room_name)
-                end
-
-                if room_config.persistent ~= nil then
-                    room:set_persistent(room_config.persistent)
-                    module:log("info", "Set persistent=%s for room %s", tostring(room_config.persistent), room_name)
-                end
-
-                if room_config.hidden ~= nil then
-                    room:set_hidden(room_config.hidden)
-                    module:log("info", "Set hidden=%s for room %s", tostring(room_config.hidden), room_name)
-                end
-
-                if room_config.allowInvites ~= nil then
-                    room:set_allow_member_invites(room_config.allowInvites)
-                    module:log("info", "Set allow_invites=%s for room %s", tostring(room_config.allowInvites), room_name)
-                end
-
-                if room_config.publicRoom ~= nil then
-                    room:set_public(room_config.publicRoom)
-                    module:log("info", "Set public=%s for room %s", tostring(room_config.publicRoom), room_name)
-                end
-
-                if room_config.changeSubject ~= nil then
-                    room:set_changesubject(room_config.changeSubject)
-                    module:log("info", "Set changesubject=%s for room %s", tostring(room_config.changeSubject), room_name)
-                end
-
-                if room_config.historyLength and room_config.historyLength >= 0 then
-                    room:set_history_length(room_config.historyLength)
-                    module:log("info", "Set history_length=%d for room %s", room_config.historyLength, room_name)
-                end
-
-                -- Enforce meeting duration if maxDurationMinutes is set
-                if room_config.maxDurationMinutes and room_config.maxDurationMinutes > 0 then
-                    local duration_seconds = room_config.maxDurationMinutes * 60
-                    module:log("info", "Scheduling room destruction for %s in %d minutes", room_name, room_config.maxDurationMinutes)
-
-                    -- Schedule room destruction after duration
-                    module:add_timer(duration_seconds, function()
-                        module:log("warn", "Max duration reached for room %s, destroying room", room_name)
-                        room:destroy(nil, "Maximum meeting duration exceeded")
-                        return false -- Don't repeat timer
-                    end)
-                end
-            end
-
-            if response.allowed then
-                module:log("info", "Access granted for user %s", user_name)
-                return
-            end
-        end
-    end
-
-    module:log("warn", "Access denied for user %s in room %s", user_name, room_name)
-    return true -- Block access
-end, 10)
-
--- Event: User Joined
+-- Event: Apply room configuration on first join
+-- Room config is fetched and stored by mod_room_access_validator
+-- This hook applies the config to the room when first user joins
 module:hook("muc-occupant-joined", function(event)
     local room = event.room
-    local occupant = event.occupant
-
     local room_jid = room.jid
-    local room_name = jid.split(room_jid)
-    local user_jid = occupant.bare_jid
-    local user_name = jid.split(user_jid)
+    local room_name = get_room_name(room_jid)
 
-    -- Determine if moderator
+    -- Check if room config already applied
+    if room._data.config_applied then
+        return
+    end
+
+    -- Check if backend config was stored by mod_room_access_validator
+    if not room._data.backend_config then
+        module:log("debug", "No backend config available for room %s yet", room_name)
+        return
+    end
+
+    local room_config = room._data.backend_config
+    module:log("info", "Applying room configuration for %s (meetingId=%s)", room_name, room_config.recordingMeetingId)
+
+    -- Build recording upload config from flat fields
+    room._data.recording_upload_config = {
+        meetingId = room_config.recordingMeetingId,
+        fileServiceUrl = room_config.recordingFileServiceUrl,
+        uploadPath = room_config.recordingUploadPath,
+        bucket = room_config.recordingBucket,
+        storagePath = room_config.recordingStoragePath
+    }
+
+    -- Enforce Prosody MUC room settings from backend
+    -- IMPORTANT: Disable members_only to prevent password prompt
+    -- We handle authentication via JWT in mod_room_access_validator
+    room:set_members_only(false)
+    module:log("info", "Set members_only=false for room %s (auth handled by validator)", room_name)
+
+    -- Disable moderated mode - we don't use it
+    room:set_moderated(false)
+    module:log("info", "Set moderated=false for room %s", room_name)
+
+    if room_config.persistent ~= nil then
+        room:set_persistent(room_config.persistent)
+        module:log("info", "Set persistent=%s for room %s", tostring(room_config.persistent), room_name)
+    end
+
+    if room_config.hidden ~= nil then
+        room:set_hidden(room_config.hidden)
+        module:log("info", "Set hidden=%s for room %s", tostring(room_config.hidden), room_name)
+    end
+
+    if room_config.allowInvites ~= nil then
+        room:set_allow_member_invites(room_config.allowInvites)
+        module:log("info", "Set allow_invites=%s for room %s", tostring(room_config.allowInvites), room_name)
+    end
+
+    if room_config.publicRoom ~= nil then
+        room:set_public(room_config.publicRoom)
+        module:log("info", "Set public=%s for room %s", tostring(room_config.publicRoom), room_name)
+    end
+
+    if room_config.changeSubject ~= nil then
+        room:set_changesubject(room_config.changeSubject)
+        module:log("info", "Set changesubject=%s for room %s", tostring(room_config.changeSubject), room_name)
+    end
+
+    if room_config.historyLength and room_config.historyLength >= 0 then
+        room:set_history_length(room_config.historyLength)
+        module:log("info", "Set history_length=%d for room %s", room_config.historyLength, room_name)
+    end
+
+    -- Set room subject to meeting title (displays in Jitsi UI instead of room name)
+    if room_config.meetingTitle and room_config.meetingTitle ~= "" then
+        room:set_subject(nil, room_config.meetingTitle)
+        module:log("info", "Set room subject to meeting title: %s", room_config.meetingTitle)
+    end
+
+    -- Enforce meeting duration if maxDurationMinutes is set
+    if room_config.maxDurationMinutes and room_config.maxDurationMinutes > 0 then
+        local duration_seconds = room_config.maxDurationMinutes * 60
+        module:log("info", "Scheduling room destruction for %s in %d minutes", room_name, room_config.maxDurationMinutes)
+
+        -- Schedule room destruction after duration
+        module:add_timer(duration_seconds, function()
+            module:log("warn", "Max duration reached for room %s, destroying room", room_name)
+            room:destroy(nil, "Maximum meeting duration exceeded")
+            return false -- Don't repeat timer
+        end)
+    end
+
+    -- Mark config as applied
+    room._data.config_applied = true
+    module:log("info", "Room configuration applied successfully for %s", room_name)
+
+    -- Also send user-joined webhook
+    local user_jid = event.occupant.bare_jid
+    local user_name = get_room_name(user_jid)
     local affiliation = room:get_affiliation(user_jid)
     local is_moderator = (affiliation == "owner" or affiliation == "admin")
 
@@ -189,7 +168,7 @@ module:hook("muc-occupant-joined", function(event)
         isModerator = is_moderator,
         timestamp = os.time()
     })
-end, 10)
+end, 5)
 
 -- Event: User Left
 module:hook("muc-occupant-left", function(event)
@@ -197,9 +176,9 @@ module:hook("muc-occupant-left", function(event)
     local occupant = event.occupant
 
     local room_jid = room.jid
-    local room_name = jid.split(room_jid)
+    local room_name = get_room_name(room_jid)
     local user_jid = occupant.bare_jid
-    local user_name = jid.split(user_jid)
+    local user_name = get_room_name(user_jid)  -- Extract user part from JID
 
     module:log("info", "User left: %s from room %s", user_name, room_name)
 
@@ -215,7 +194,7 @@ end, 10)
 module:hook("muc-room-destroyed", function(event)
     local room = event.room
     local room_jid = room.jid
-    local room_name = jid.split(room_jid)
+    local room_name = get_room_name(room_jid)
 
     module:log("info", "Room destroyed: %s", room_name)
 
@@ -229,12 +208,12 @@ end, 10)
 module:hook("muc-set-affiliation", function(event)
     local room = event.room
     local actor = event.actor
-    local jid = event.jid
+    local user_jid = event.jid
     local affiliation = event.affiliation
 
     local room_jid = room.jid
-    local room_name = jid.split(room_jid)
-    local user_name = jid.split(jid)
+    local room_name = get_room_name(room_jid)
+    local user_name = get_room_name(user_jid)
 
     local is_moderator = (affiliation == "owner" or affiliation == "admin")
 
@@ -255,7 +234,7 @@ module:hook("jibri-recording-status", function(event)
     local session_id = event.session_id
 
     local room_jid = room.jid
-    local room_name = jid.split(room_jid)
+    local room_name = get_room_name(room_jid)
 
     module:log("info", "Recording status changed: %s (status: %s)", room_name, status)
 

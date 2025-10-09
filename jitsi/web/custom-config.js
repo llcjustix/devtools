@@ -18,6 +18,12 @@ config.websocket = wsProtocol + '//' + window.location.host + '/xmpp-websocket';
 window.applyRoomConfiguration = function(roomConfig) {
     if (!roomConfig) return;
 
+    // Meeting title - display in UI instead of room name
+    if (roomConfig.meetingTitle) {
+        config.subject = roomConfig.meetingTitle;
+        console.log('[JustIX] Meeting title set:', roomConfig.meetingTitle);
+    }
+
     // Recording settings
     if (roomConfig.recordingEnabled !== undefined) {
         config.recordingService.enabled = roomConfig.recordingEnabled;
@@ -202,3 +208,110 @@ config.prejoinConfig = {
     enabled: true,
     hideDisplayName: false
 };
+
+// ============================================
+// AUTHENTICATION HANDLING
+// ============================================
+
+// Handle JWT token from URL parameter
+(function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const jwtToken = urlParams.get('jwt');
+
+    if (jwtToken) {
+        console.log('[JustIX] JWT token found in URL');
+        // Store JWT for connection - Jitsi will use it automatically
+        config.jwt = jwtToken;
+    }
+
+    // Listen for authentication failures and redirect to login
+    // Use JitsiMeetJS events which fire earlier than APP events
+    let redirectHandled = false;
+
+    function setupAuthenticationListener() {
+        console.log('[JustIX] Setting up authentication listener');
+
+        // Try to hook into JitsiMeetJS events
+        if (typeof JitsiMeetJS !== 'undefined') {
+            console.log('[JustIX] JitsiMeetJS available, setting up listeners');
+
+            // Listen for connection events
+            const JitsiConnectionEvents = JitsiMeetJS.events.connection;
+            const JitsiConferenceEvents = JitsiMeetJS.events.conference;
+
+            // Override the connection init to add our listener
+            const originalConnection = JitsiMeetJS.JitsiConnection;
+            if (originalConnection) {
+                const origPrototype = originalConnection.prototype.connect;
+                originalConnection.prototype.connect = function() {
+                    console.log('[JustIX] Connection initiated');
+
+                    // Add error listener
+                    this.addEventListener(JitsiConnectionEvents.CONNECTION_FAILED, function(error) {
+                        console.log('[JustIX] Connection failed event:', error);
+                        if (error === 'connection.passwordRequired' && !redirectHandled) {
+                            redirectHandled = true;
+                            handleAuthenticationRequired();
+                        }
+                    });
+
+                    // Call original
+                    return origPrototype.apply(this, arguments);
+                };
+            }
+        }
+
+        // Also try APP-based listeners as fallback
+        if (typeof APP !== 'undefined' && APP.conference) {
+            console.log('[JustIX] APP.conference available, adding listeners');
+
+            APP.conference.addListener('CONFERENCE_FAILED', function(errorCode, error) {
+                console.log('[JustIX] Conference failed:', errorCode, error);
+                if ((errorCode === 'conference.authenticationRequired' ||
+                     errorCode === 'connection.passwordRequired') && !redirectHandled) {
+                    redirectHandled = true;
+                    handleAuthenticationRequired();
+                }
+            });
+
+            APP.conference.addListener('CONNECTION_FAILED', function(error) {
+                console.log('[JustIX] Connection failed:', error);
+                if (error === 'connection.passwordRequired' && !redirectHandled) {
+                    redirectHandled = true;
+                    handleAuthenticationRequired();
+                }
+            });
+        }
+    }
+
+    // Try to setup listeners when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', setupAuthenticationListener);
+    } else {
+        setupAuthenticationListener();
+    }
+
+    // Also try when window loads (fallback)
+    window.addEventListener('load', setupAuthenticationListener);
+
+    function handleAuthenticationRequired() {
+        console.log('[JustIX] Authentication required - redirecting to login');
+
+        // Get room name from URL
+        const pathParts = window.location.pathname.split('/').filter(p => p);
+        const roomName = pathParts[pathParts.length - 1];
+
+        if (!roomName) {
+            console.error('[JustIX] Cannot determine room name for redirect');
+            return;
+        }
+
+        // Redirect to login page
+        const loginUrl = `http://localhost:2031/login.html?room=${roomName}&returnUrl=${encodeURIComponent(window.location.href)}`;
+        console.log('[JustIX] Redirecting to:', loginUrl);
+
+        setTimeout(function() {
+            window.location.href = loginUrl;
+        }, 1000); // Small delay to show error message
+    }
+})();
