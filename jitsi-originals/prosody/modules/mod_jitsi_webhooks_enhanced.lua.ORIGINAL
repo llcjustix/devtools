@@ -136,27 +136,6 @@ module:hook("muc-occupant-joined", function(event)
         module:log("info", "Set room subject to meeting title: %s", room_config.meetingTitle)
     end
 
-    -- Enable lobby if required (for scheduled meetings where non-moderators should wait)
-    if room._data.lobby_required or room_config.lobbyEnabled then
-        -- Lobby support requires mod_muc_lobby_rooms module to be loaded
-        -- Enable lobby (users join lobby instead of main room until moderator admits them)
-        if room.set_lobby_enabled then
-            room:set_lobby_enabled(true)
-            module:log("info", "Enabled lobby for room %s (scheduled meeting - waiting for moderator)", room_name)
-        else
-            module:log("warn", "Lobby requested but mod_muc_lobby_rooms not available for room %s", room_name)
-        end
-    end
-
-    -- Assign moderator affiliation to configured moderators
-    if room_config.moderators and type(room_config.moderators) == "table" then
-        for _, moderator_jid in ipairs(room_config.moderators) do
-            -- Set affiliation to "owner" (gives full moderator rights in Jitsi)
-            room:set_affiliation(true, moderator_jid, "owner", "Designated moderator from backend")
-            module:log("info", "Granted moderator (owner) affiliation to %s in room %s", moderator_jid, room_name)
-        end
-    end
-
     -- Enforce meeting duration if maxDurationMinutes is set
     if room_config.maxDurationMinutes and room_config.maxDurationMinutes > 0 then
         local duration_seconds = room_config.maxDurationMinutes * 60
@@ -177,18 +156,6 @@ module:hook("muc-occupant-joined", function(event)
     -- Also send user-joined webhook
     local user_jid = event.occupant.bare_jid
     local user_name = get_room_name(user_jid)
-
-    -- Check if user was marked as moderator by mod_room_access_validator
-    local session = event.origin
-    if session and session.jitsi_is_moderator then
-        -- Grant moderator affiliation if not already set
-        local current_affiliation = room:get_affiliation(user_jid)
-        if current_affiliation ~= "owner" and current_affiliation ~= "admin" then
-            room:set_affiliation(true, user_jid, "owner", "Moderator from backend validation")
-            module:log("info", "Granted moderator affiliation to %s in room %s (from validator)", user_jid, room_name)
-        end
-    end
-
     local affiliation = room:get_affiliation(user_jid)
     local is_moderator = (affiliation == "owner" or affiliation == "admin")
 

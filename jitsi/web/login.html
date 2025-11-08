@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meeting Login - Justix Academy</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo h1 {
+            color: #667eea;
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .logo p {
+            color: #718096;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .meeting-info {
+            background: #f7fafc;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-bottom: 25px;
+            border-radius: 8px;
+        }
+
+        .meeting-info h3 {
+            color: #2d3748;
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+
+        .meeting-info p {
+            color: #718096;
+            font-size: 13px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            color: #4a5568;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .login-btn:active {
+            transform: translateY(0);
+        }
+
+        .login-btn:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .error-message {
+            background: #fed7d7;
+            border: 1px solid #fc8181;
+            color: #c53030;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            display: none;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .help-text {
+            text-align: center;
+            color: #718096;
+            font-size: 12px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo">
+            <h1>🎓 Justix Academy</h1>
+            <p>Meeting Authentication</p>
+        </div>
+
+        <div class="meeting-info" id="meetingInfo">
+            <h3 id="meetingTitle">Loading meeting info...</h3>
+            <p id="meetingRoom"></p>
+        </div>
+
+        <div class="error-message" id="errorMessage"></div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" required
+                       placeholder="student@example.com" autocomplete="email">
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required
+                       placeholder="Enter your password" autocomplete="current-password">
+            </div>
+
+            <button type="submit" class="login-btn" id="loginBtn">
+                Join Meeting
+            </button>
+        </form>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p style="margin-top: 15px; color: #718096;">Authenticating...</p>
+        </div>
+
+        <div class="help-text">
+            This is a private meeting. Please login to continue.
+        </div>
+    </div>
+
+    <script>
+        // Extract room name from URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const roomName = urlParams.get('room');
+        const returnUrl = urlParams.get('returnUrl');
+
+        // Load meeting info
+        if (roomName) {
+            // Try to get meeting info from meeting-service
+            fetch(`http://localhost:2031/meetings/by-room/${roomName}`)
+                .then(res => {
+                    if (res.ok) return res.json();
+                    throw new Error('Meeting not found');
+                })
+                .then(meeting => {
+                    document.getElementById('meetingTitle').textContent = meeting.title || 'Private Meeting';
+                    document.getElementById('meetingRoom').textContent = `Room: ${roomName}`;
+                })
+                .catch(() => {
+                    document.getElementById('meetingTitle').textContent = 'Private Meeting';
+                    document.getElementById('meetingRoom').textContent = `Room: ${roomName}`;
+                });
+        } else {
+            document.getElementById('meetingTitle').textContent = 'Meeting Login';
+            document.getElementById('meetingRoom').textContent = 'Please provide room information';
+        }
+
+        // Handle form submission
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const errorDiv = document.getElementById('errorMessage');
+            const loginBtn = document.getElementById('loginBtn');
+            const loginForm = document.getElementById('loginForm');
+            const loading = document.getElementById('loading');
+
+            // Hide error
+            errorDiv.style.display = 'none';
+
+            // Show loading
+            loginForm.style.display = 'none';
+            loading.style.display = 'block';
+
+            try {
+                // Call auth-service login endpoint
+                const response = await fetch('http://localhost:2025/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: email,  // auth-service uses 'username' field
+                        password: password
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+
+                    // Extract JWT token from Keycloak response
+                    const jwtToken = data.access_token || data.token;
+
+                    if (!jwtToken) {
+                        throw new Error('No token received from authentication service');
+                    }
+
+                    // Redirect to Jitsi with JWT token
+                    const jitsiUrl = returnUrl || `http://localhost:8001/${roomName}`;
+                    const urlWithToken = `${jitsiUrl}?jwt=${jwtToken}`;
+
+                    console.log('Redirecting to:', urlWithToken);
+                    window.location.href = urlWithToken;
+                } else {
+                    const errorText = await response.text();
+                    let errorMessage = 'Authentication failed';
+
+                    try {
+                        const errorJson = JSON.parse(errorText);
+                        errorMessage = errorJson.message || errorJson.error || errorMessage;
+                    } catch (e) {
+                        errorMessage = errorText || errorMessage;
+                    }
+
+                    throw new Error(errorMessage);
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+
+                // Show error
+                errorDiv.textContent = error.message || 'Authentication failed. Please try again.';
+                errorDiv.style.display = 'block';
+
+                // Hide loading, show form
+                loading.style.display = 'none';
+                loginForm.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>

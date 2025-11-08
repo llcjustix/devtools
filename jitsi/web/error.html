@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meeting Not Found - LearnX</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #2A3A4B 0%, #1a242f 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .error-container {
+            background: white;
+            border-radius: 12px;
+            padding: 60px 40px;
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .error-icon {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 30px;
+            background: #f0f4f8;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 60px;
+        }
+
+        h1 {
+            color: #2A3A4B;
+            font-size: 32px;
+            margin-bottom: 16px;
+            font-weight: 600;
+        }
+
+        .error-code {
+            color: #5DADE2;
+            font-size: 18px;
+            font-weight: 500;
+            margin-bottom: 24px;
+        }
+
+        .error-message {
+            color: #64748b;
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 32px;
+        }
+
+        .error-details {
+            background: #f8fafc;
+            border-left: 4px solid #5DADE2;
+            padding: 16px 20px;
+            text-align: left;
+            border-radius: 4px;
+            margin-bottom: 32px;
+        }
+
+        .error-details strong {
+            color: #2A3A4B;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .error-details p {
+            color: #64748b;
+            font-size: 14px;
+            margin: 4px 0;
+        }
+
+        .actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 28px;
+            border-radius: 6px;
+            font-size: 15px;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-primary {
+            background: #2A3A4B;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1f2d3a;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(42, 58, 75, 0.3);
+        }
+
+        .btn-secondary {
+            background: #f0f4f8;
+            color: #2A3A4B;
+        }
+
+        .btn-secondary:hover {
+            background: #e2e8f0;
+        }
+
+        .logo {
+            margin-bottom: 30px;
+        }
+
+        .logo img {
+            height: 40px;
+        }
+
+        @media (max-width: 600px) {
+            .error-container {
+                padding: 40px 24px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            .error-icon {
+                width: 100px;
+                height: 100px;
+                font-size: 50px;
+            }
+
+            .actions {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <div class="logo">
+            <img src="images/learnx-logo.svg" alt="LearnX" onerror="this.style.display='none'">
+        </div>
+
+        <div class="error-icon">
+            🔒
+        </div>
+
+        <h1 id="errorTitle">Meeting Not Found</h1>
+        <p class="error-code" id="errorCode">Error: MEETING_NOT_FOUND</p>
+
+        <p class="error-message" id="errorMessage">
+            This meeting doesn't exist or the link is invalid.
+            Please check the link you received and try again.
+        </p>
+
+        <div class="error-details" id="errorDetails" style="display: none;">
+            <strong>Possible reasons:</strong>
+            <p id="errorReason"></p>
+        </div>
+
+        <div class="actions">
+            <a href="/" class="btn btn-secondary">Go to Homepage</a>
+            <a href="mailto:support@learnx.academy" class="btn btn-primary">Contact Support</a>
+        </div>
+    </div>
+
+    <script>
+        // Parse error from URL parameters
+        const params = new URLSearchParams(window.location.search);
+        const error = params.get('error');
+        const reason = params.get('reason');
+        const room = params.get('room');
+
+        // Error messages mapping
+        const errorMessages = {
+            'meeting-not-found': {
+                title: 'Meeting Not Found',
+                icon: '🔍',
+                code: 'MEETING_NOT_FOUND',
+                message: 'This meeting does not exist in our system. Please check the meeting link you received.',
+                reasons: [
+                    'The meeting link is incorrect or incomplete',
+                    'The meeting has been deleted',
+                    'You may have accessed an old or expired link'
+                ]
+            },
+            'meeting-ended': {
+                title: 'Meeting Has Ended',
+                icon: '✅',
+                code: 'MEETING_ENDED',
+                message: 'This meeting has already ended and is no longer available to join.',
+                reasons: [
+                    'The meeting finished at its scheduled end time',
+                    'The host ended the meeting',
+                    'The meeting duration limit was reached'
+                ]
+            },
+            'meeting-cancelled': {
+                title: 'Meeting Cancelled',
+                icon: '🚫',
+                code: 'MEETING_CANCELLED',
+                message: 'This meeting has been cancelled by the organizer.',
+                reasons: [
+                    'The meeting was cancelled before it started',
+                    'Contact the organizer for more information'
+                ]
+            },
+            'unauthorized': {
+                title: 'Access Denied',
+                icon: '🔐',
+                code: 'UNAUTHORIZED',
+                message: 'You are not authorized to join this meeting.',
+                reasons: [
+                    'This is a private meeting',
+                    'You need to be invited to join',
+                    'Your invitation may have expired'
+                ]
+            },
+            'meeting-expired': {
+                title: 'Meeting Expired',
+                icon: '⏱️',
+                code: 'MEETING_EXPIRED',
+                message: 'This meeting link has expired.',
+                reasons: [
+                    'The meeting exceeded its time limit',
+                    'Scheduled meetings expire after their end time',
+                    'Contact the organizer to schedule a new meeting'
+                ]
+            }
+        };
+
+        // Apply error details
+        if (error && errorMessages[error]) {
+            const errorInfo = errorMessages[error];
+            document.getElementById('errorTitle').textContent = errorInfo.title;
+            document.getElementById('errorCode').textContent = `Error: ${errorInfo.code}`;
+            document.getElementById('errorMessage').textContent = errorInfo.message;
+            document.querySelector('.error-icon').textContent = errorInfo.icon;
+
+            if (errorInfo.reasons) {
+                const reasonsList = errorInfo.reasons.map(r => `• ${r}`).join('<br>');
+                document.getElementById('errorReason').innerHTML = reasonsList;
+                document.getElementById('errorDetails').style.display = 'block';
+            }
+        } else if (reason) {
+            // Custom reason from backend
+            document.getElementById('errorReason').innerHTML = `• ${reason}`;
+            document.getElementById('errorDetails').style.display = 'block';
+        }
+
+        // Add room name to display if available
+        if (room) {
+            const roomInfo = document.createElement('p');
+            roomInfo.style.color = '#94a3b8';
+            roomInfo.style.fontSize = '14px';
+            roomInfo.style.marginTop = '16px';
+            roomInfo.innerHTML = `<strong>Room:</strong> ${room}`;
+            document.querySelector('.error-message').after(roomInfo);
+        }
+    </script>
+</body>
+</html>

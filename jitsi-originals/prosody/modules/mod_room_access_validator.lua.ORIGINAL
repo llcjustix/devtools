@@ -26,7 +26,7 @@ local b64_encode = require "util.encodings".base64.encode
 
 -- Get configuration from environment variables or Prosody config
 local meeting_service_url = os.getenv("MEETING_SERVICE_URL") or module:get_option_string("meeting_service_url", "http://localhost:2031")
-local validate_url = meeting_service_url .. "/webhooks/jitsi/validate-user-room-access"
+local validate_url = meeting_service_url .. "/webhooks/jitsi/validate-access"
 local webhook_secret = os.getenv("JITSI_WEBHOOK_SECRET") or module:get_option_string("webhook_secret", "")
 
 module:log("info", "Room Access Validator Module loaded")
@@ -143,8 +143,6 @@ local function validate_room_access(room, room_name, user_jid, jwt_token)
             validation_result.allowed = data.allowed == true
             validation_result.reason = data.reason or "unknown"
             validation_result.requireAuth = data.requireAuth == true
-            validation_result.requireLobby = data.requireLobby == true
-            validation_result.isModerator = data.isModerator == true
             validation_result.redirectUrl = data.redirectUrl
             validation_result.meetingTitle = data.meetingTitle
             validation_result.status = data.status
@@ -156,12 +154,10 @@ local function validate_room_access(room, room_name, user_jid, jwt_token)
                 module:log("info", "Stored room configuration: meetingId=%s", tostring(data.configuration.meetingId))
             end
 
-            module:log("info", "Validation response: allowed=%s, reason=%s, requireAuth=%s, requireLobby=%s, isModerator=%s, status=%s",
+            module:log("info", "Validation response: allowed=%s, reason=%s, requireAuth=%s, status=%s",
                 tostring(validation_result.allowed),
                 tostring(validation_result.reason),
                 tostring(validation_result.requireAuth),
-                tostring(validation_result.requireLobby),
-                tostring(validation_result.isModerator),
                 tostring(validation_result.status))
         else
             module:log("error", "Failed to parse validation response: %s", tostring(response_body))
@@ -216,21 +212,7 @@ module:hook("muc-occupant-pre-join", function(event)
     local result = validate_room_access(room, room_name, user_jid, jwt_token)
 
     if result.allowed then
-        module:log("info", "✓ Access GRANTED: room=%s, user=%s, requireLobby=%s, isModerator=%s",
-            room_name, user_jid, tostring(result.requireLobby), tostring(result.isModerator))
-
-        -- Store moderator status in session for mod_jitsi_webhooks_enhanced to use
-        if result.isModerator then
-            session.jitsi_is_moderator = true
-            module:log("info", "User %s is a moderator for room %s", user_jid, room_name)
-        end
-
-        -- If requireLobby is true, user should be placed in lobby
-        if result.requireLobby then
-            -- Store lobby requirement for mod_jitsi_webhooks_enhanced to handle
-            room._data.lobby_required = true
-            module:log("info", "Lobby enabled for room %s - user %s will wait for moderator", room_name, user_jid)
-        end
+        module:log("info", "✓ Access GRANTED: room=%s, user=%s", room_name, user_jid)
 
         -- Show remaining time warning if meeting is expiring soon
         if result.remainingMinutes and result.remainingMinutes <= 10 then
