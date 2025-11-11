@@ -270,12 +270,17 @@
                         throw new Error('No token received from authentication service');
                     }
 
-                    // Redirect to Jitsi with JWT token
-                    const jitsiUrl = returnUrl || `http://localhost:8001/${roomName}`;
-                    const urlWithToken = `${jitsiUrl}?jwt=${jwtToken}`;
+                    // Store JWT token in browser storage for jitsi-room-validator.js to use
+                    // Use both sessionStorage and localStorage for redundancy
+                    sessionStorage.setItem('jitsi_jwt_token', jwtToken);
+                    localStorage.setItem('jitsi_jwt_token', jwtToken);
+                    console.log('[Login] JWT token stored in browser storage');
 
-                    console.log('Redirecting to:', urlWithToken);
-                    window.location.href = urlWithToken;
+                    // Redirect to Jitsi meeting (without token in URL for security)
+                    const jitsiUrl = returnUrl || `http://localhost:8001/${roomName}`;
+
+                    console.log('[Login] Redirecting to:', jitsiUrl);
+                    window.location.href = jitsiUrl;
                 } else {
                     const errorText = await response.text();
                     let errorMessage = 'Authentication failed';
