@@ -703,11 +703,20 @@
                         </div>
                     </div>
 
-                    <a href="https://learnx.uz/forgot-password" class="forgot-link">Forgot password?</a>
+                    <a href="#" class="forgot-link" id="forgotLink" onclick="showForgotPassword(event)">Forgot password?</a>
 
                     <button type="submit" class="login-btn" id="loginBtn">
                         Sign In
                     </button>
+                </form>
+
+                <form id="forgotForm" style="display:none" autocomplete="on">
+                    <div class="form-group">
+                        <input type="email" id="forgotEmail" name="email" required autocomplete="email">
+                        <label for="forgotEmail">Email address</label>
+                    </div>
+                    <button type="submit" class="login-btn" id="forgotBtn">Send Reset Link</button>
+                    <a href="#" class="forgot-link" style="text-align:center;margin-top:14px;margin-bottom:0" onclick="showLoginForm(event)">Back to Sign In</a>
                 </form>
 
                 <div class="loading" id="loading">
@@ -826,19 +835,30 @@
             const loading = document.getElementById('loading');
             const successState = document.getElementById('successState');
 
-            errorDiv.style.display = 'none';
             errorDiv.classList.remove('visible');
+            errorDiv.removeAttribute('style');
             loginForm.style.display = 'none';
             document.querySelector('.forgot-link').style.display = 'none';
             loading.style.display = 'block';
 
+            let response;
             try {
-                const response = await fetch(authServiceUrl + '/auth/login', {
+                response = await fetch(authServiceUrl + '/auth/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username: email, password: password })
                 });
+            } catch (networkError) {
+                // Network/connection error — server unreachable
+                errorDiv.textContent = 'Unable to connect to the server. Please check your internet connection and try again.';
+                errorDiv.classList.add('visible');
+                loading.style.display = 'none';
+                loginForm.style.display = 'block';
+                document.querySelector('.forgot-link').style.display = 'block';
+                return;
+            }
 
+            try {
                 if (response.ok) {
                     const data = await response.json();
                     const accessToken = data.access_token;
@@ -847,7 +867,6 @@
                         throw new Error('No token received from authentication service');
                     }
 
-                    // Store tokens in both storages
                     sessionStorage.setItem('learnx_access_token', accessToken);
                     localStorage.setItem('learnx_access_token', accessToken);
 
@@ -856,18 +875,20 @@
                         localStorage.setItem('learnx_refresh_token', data.refresh_token);
                     }
 
-                    // Show success animation
                     loading.style.display = 'none';
                     successState.style.display = 'block';
 
-                    // Fade out and redirect
                     setTimeout(() => {
                         document.body.classList.add('fade-out');
                         setTimeout(() => { window.location.href = getRedirectUrl(); }, 400);
                     }, 800);
+                } else if (response.status === 401 || response.status === 403) {
+                    // Invalid credentials
+                    throw new Error('Invalid email or password. Please try again.');
                 } else {
+                    // Other server error
                     const errorText = await response.text();
-                    let msg = 'Invalid email or password. Please try again.';
+                    let msg = 'Something went wrong. Please try again later.';
                     try {
                         const errorJson = JSON.parse(errorText);
                         msg = errorJson.message || errorJson.error || msg;
@@ -877,12 +898,99 @@
                     throw new Error(msg);
                 }
             } catch (error) {
-                errorDiv.textContent = error.message || 'Authentication failed. Please try again.';
+                errorDiv.textContent = error.message;
                 errorDiv.classList.add('visible');
                 loading.style.display = 'none';
                 loginForm.style.display = 'block';
                 document.querySelector('.forgot-link').style.display = 'block';
             }
+        });
+        // ── Forgot password toggle ──
+        window.showForgotPassword = function(e) {
+            e.preventDefault();
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('forgotLink').style.display = 'none';
+            document.getElementById('forgotForm').style.display = 'block';
+            document.getElementById('loginTitle').textContent = 'Reset your password';
+            document.getElementById('loginSubtitle').textContent = 'Enter your email and we\'ll send you a reset link';
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.classList.remove('visible');
+            errorDiv.removeAttribute('style');
+            // Pre-fill email if already entered
+            const loginEmail = document.getElementById('email').value;
+            if (loginEmail) document.getElementById('forgotEmail').value = loginEmail;
+            document.getElementById('forgotEmail').dispatchEvent(new Event('input'));
+        };
+
+        window.showLoginForm = function(e) {
+            e.preventDefault();
+            document.getElementById('forgotForm').style.display = 'none';
+            document.getElementById('loginForm').style.display = 'block';
+            document.getElementById('forgotLink').style.display = 'block';
+            document.getElementById('loginTitle').textContent = roomName ? 'Sign in to join' : 'Sign in to continue';
+            document.getElementById('loginSubtitle').textContent = roomName ? 'Enter your credentials to access this meeting' : 'Enter your credentials to access LearnX Meets';
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.classList.remove('visible');
+            errorDiv.removeAttribute('style');
+        };
+
+        // ── Forgot password form submission ──
+        document.getElementById('forgotForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const email = document.getElementById('forgotEmail').value.trim();
+            if (!email) return;
+
+            const errorDiv = document.getElementById('errorMessage');
+            const forgotBtn = document.getElementById('forgotBtn');
+            const forgotForm = document.getElementById('forgotForm');
+            errorDiv.classList.remove('visible');
+            errorDiv.removeAttribute('style');
+            forgotBtn.disabled = true;
+            forgotBtn.textContent = 'Sending...';
+
+            let response;
+            try {
+                response = await fetch(authServiceUrl + '/auth/forgot-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email })
+                });
+            } catch (networkError) {
+                errorDiv.textContent = 'Unable to connect to the server. Please check your internet connection.';
+                errorDiv.classList.add('visible');
+                forgotBtn.disabled = false;
+                forgotBtn.textContent = 'Send Reset Link';
+                return;
+            }
+
+            if (response.ok) {
+                forgotForm.style.display = 'none';
+                document.getElementById('loading').style.display = 'none';
+                const successState = document.getElementById('successState');
+                successState.style.display = 'block';
+                successState.querySelector('p').textContent = 'Reset link sent! Check your email.';
+                document.getElementById('loginTitle').textContent = 'Check your email';
+                document.getElementById('loginSubtitle').textContent = 'We sent a password reset link to ' + email;
+            } else {
+                let msg = 'Failed to send reset link. Please try again.';
+                try {
+                    const errText = await response.text();
+                    const errJson = JSON.parse(errText);
+                    msg = errJson.message || errJson.error || msg;
+                } catch (e) {}
+                errorDiv.textContent = msg;
+                errorDiv.classList.add('visible');
+            }
+            forgotBtn.disabled = false;
+            forgotBtn.textContent = 'Send Reset Link';
+        });
+
+        // Floating label for forgot form
+        document.querySelectorAll('#forgotForm .form-group input').forEach(input => {
+            const update = () => input.classList.toggle('has-value', input.value.length > 0);
+            input.addEventListener('input', update);
+            input.addEventListener('change', update);
+            update();
         });
     </script>
 </body>
