@@ -121,6 +121,48 @@
     const clearToken = () => {
         sessionStorage.removeItem('jitsi_jwt_token');
         localStorage.removeItem('jitsi_jwt_token');
+        sessionStorage.removeItem('jitsi_refresh_token');
+        localStorage.removeItem('jitsi_refresh_token');
+    };
+
+    // Get refresh token
+    const getRefreshToken = () => {
+        return sessionStorage.getItem('jitsi_refresh_token') || localStorage.getItem('jitsi_refresh_token');
+    };
+
+    // Auth service URL detection
+    const getAuthServiceUrl = () => {
+        if (window.AUTH_SERVICE_URL) return window.AUTH_SERVICE_URL;
+        const hostname = window.location.hostname;
+        if (hostname === 'localhost' || hostname === '127.0.0.1') return 'http://localhost:2025';
+        if (hostname === 'host.docker.internal') return 'http://host.docker.internal:2025';
+        return `${window.location.protocol}//${hostname.replace('meet.', '')}`;
+    };
+
+    // Try to refresh the access token
+    const tryRefreshToken = async () => {
+        const refreshToken = getRefreshToken();
+        if (!refreshToken) return null;
+        try {
+            const resp = await fetch(`${getAuthServiceUrl()}/auth/token/refresh`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ refreshToken })
+            });
+            if (resp.ok) {
+                const data = await resp.json();
+                if (data.access_token) {
+                    sessionStorage.setItem('jitsi_jwt_token', data.access_token);
+                    localStorage.setItem('jitsi_jwt_token', data.access_token);
+                    if (data.refresh_token) {
+                        sessionStorage.setItem('jitsi_refresh_token', data.refresh_token);
+                        localStorage.setItem('jitsi_refresh_token', data.refresh_token);
+                    }
+                    return data.access_token;
+                }
+            }
+        } catch (e) { console.log('[LearnX Room Validator] Token refresh failed:', e); }
+        return null;
     };
 
     // Validate user access for private meetings (browser-specific endpoint)
@@ -137,6 +179,54 @@
                 timestamp: Date.now()
             })
         });
+    };
+
+    // Validate user access with token (extracted for reuse after refresh)
+    const proceedWithValidation = (jwtToken, roomName, overlay) => {
+        console.log('[LearnX Room Validator] Validating access with token...');
+        validateUserAccess(roomName, jwtToken)
+            .then(validateResponse => {
+                if (validateResponse.ok) {
+                    return validateResponse.json().then(accessInfo => {
+                        console.log('[LearnX Room Validator] Access validation response:', accessInfo);
+                        if (accessInfo.allowed) {
+                            console.log('[LearnX Room Validator] ✓ Access granted');
+                            overlay.remove();
+                        } else if (accessInfo.requireAuth) {
+                            console.log('[LearnX Room Validator] Token invalid - redirecting to login');
+                            window.location.href = `/login.html?room=${roomName}&returnUrl=${window.location.origin}/${roomName}`;
+                        } else {
+                            console.log('[LearnX Room Validator] ✗ Access denied:', accessInfo.reason);
+                            window.location.href = `/error.html?error=access-denied&room=${encodeURIComponent(roomName)}&reason=${encodeURIComponent(accessInfo.reason || 'Not authorized')}`;
+                        }
+                    });
+                } else if (validateResponse.status === 401 || validateResponse.status === 403) {
+                    // Token rejected — try refresh once
+                    console.log('[LearnX Room Validator] Server rejected token (', validateResponse.status, ') - attempting refresh...');
+                    return tryRefreshToken().then(newToken => {
+                        if (newToken) {
+                            return validateUserAccess(roomName, newToken).then(retryResp => {
+                                if (retryResp.ok) {
+                                    return retryResp.json().then(accessInfo => {
+                                        if (accessInfo.allowed) { overlay.remove(); }
+                                        else { window.location.href = `/error.html?error=access-denied&room=${encodeURIComponent(roomName)}`; }
+                                    });
+                                }
+                                clearToken();
+                                window.location.href = `/login.html?room=${roomName}&returnUrl=${window.location.origin}/${roomName}`;
+                            });
+                        }
+                        clearToken();
+                        window.location.href = `/login.html?room=${roomName}&returnUrl=${window.location.origin}/${roomName}`;
+                    });
+                } else {
+                    throw new Error(`Access validation failed: ${validateResponse.status}`);
+                }
+            })
+            .catch(error => {
+                console.error('[LearnX Room Validator] Access validation error:', error);
+                window.location.href = `/error.html?error=validation-error&room=${encodeURIComponent(roomName)}`;
+            });
     };
 
     // Perform validation - must wait for body to exist
@@ -167,57 +257,30 @@
                         // Get JWT token from browser storage
                         let jwtToken = getJwtToken();
 
-                        // Check if token exists and is not expired
+                        // Check if token exists and is not expired; try refresh if expired
                         if (jwtToken && isTokenExpired(jwtToken)) {
-                            console.log('[LearnX Room Validator] Token expired - clearing and redirecting to login');
-                            clearToken();
-                            jwtToken = null;
+                            console.log('[LearnX Room Validator] Token expired - attempting refresh...');
+                            return tryRefreshToken().then(newToken => {
+                                if (newToken) {
+                                    console.log('[LearnX Room Validator] Token refreshed successfully');
+                                    proceedWithValidation(newToken, roomName, overlay);
+                                } else {
+                                    clearToken();
+                                    console.log('[LearnX Room Validator] Refresh failed - redirecting to login');
+                                    window.location.href = `/login.html?room=${roomName}&returnUrl=${window.location.origin}/${roomName}`;
+                                }
+                            });
                         }
 
                         if (!jwtToken) {
-                            // No token or expired - redirect to login
+                            // No token - redirect to login
                             console.log('[LearnX Room Validator] No valid token - redirecting to login');
                             const redirectUrl = `/login.html?room=${roomName}&returnUrl=${window.location.origin}/${roomName}`;
                             window.location.href = redirectUrl;
                             return;
                         }
 
-                        // Step 2: Validate user access with token
-                        console.log('[LearnX Room Validator] Validating access with token...');
-                        validateUserAccess(roomName, jwtToken)
-                            .then(validateResponse => {
-                                if (validateResponse.ok) {
-                                    return validateResponse.json().then(accessInfo => {
-                                        console.log('[LearnX Room Validator] Access validation response:', accessInfo);
-
-                                        if (accessInfo.allowed) {
-                                            console.log('[LearnX Room Validator] ✓ Access granted');
-                                            overlay.remove();
-                                        } else if (accessInfo.requireAuth) {
-                                            // Token invalid/expired - redirect to login (on same Jitsi server)
-                                            console.log('[LearnX Room Validator] Token invalid - redirecting to login');
-                                            const redirectUrl = `/login.html?room=${roomName}&returnUrl=${window.location.origin}/${roomName}`;
-                                            window.location.href = redirectUrl;
-                                        } else {
-                                            // Access denied (not invited, etc.)
-                                            console.log('[LearnX Room Validator] ✗ Access denied:', accessInfo.reason);
-                                            window.location.href = `/error.html?error=access-denied&room=${encodeURIComponent(roomName)}&reason=${encodeURIComponent(accessInfo.reason || 'Not authorized')}`;
-                                        }
-                                    });
-                                } else if (validateResponse.status === 401 || validateResponse.status === 403) {
-                                    // Token rejected by server — clear and redirect to login
-                                    console.log('[LearnX Room Validator] Server rejected token (', validateResponse.status, ') - redirecting to login');
-                                    clearToken();
-                                    const redirectUrl = `/login.html?room=${roomName}&returnUrl=${window.location.origin}/${roomName}`;
-                                    window.location.href = redirectUrl;
-                                } else {
-                                    throw new Error(`Access validation failed: ${validateResponse.status}`);
-                                }
-                            })
-                            .catch(error => {
-                                console.error('[LearnX Room Validator] Access validation error:', error);
-                                window.location.href = `/error.html?error=validation-error&room=${encodeURIComponent(roomName)}`;
-                            });
+                        proceedWithValidation(jwtToken, roomName, overlay);
                     });
                 } else if (response.status === 404) {
                     // Meeting not found

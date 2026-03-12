@@ -849,6 +849,38 @@
         function clearToken() {
             sessionStorage.removeItem('jitsi_jwt_token');
             localStorage.removeItem('jitsi_jwt_token');
+            sessionStorage.removeItem('jitsi_refresh_token');
+            localStorage.removeItem('jitsi_refresh_token');
+        }
+
+        function getRefreshToken() {
+            return sessionStorage.getItem('jitsi_refresh_token') || localStorage.getItem('jitsi_refresh_token');
+        }
+
+        async function refreshAccessToken() {
+            const refreshToken = getRefreshToken();
+            if (!refreshToken) return null;
+            try {
+                const resp = await fetch(AUTH_URL + '/auth/token/refresh', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ refreshToken: refreshToken })
+                });
+                if (resp.ok) {
+                    const data = await resp.json();
+                    const newToken = data.access_token;
+                    if (newToken) {
+                        sessionStorage.setItem('jitsi_jwt_token', newToken);
+                        localStorage.setItem('jitsi_jwt_token', newToken);
+                        if (data.refresh_token) {
+                            sessionStorage.setItem('jitsi_refresh_token', data.refresh_token);
+                            localStorage.setItem('jitsi_refresh_token', data.refresh_token);
+                        }
+                        return newToken;
+                    }
+                }
+            } catch (e) { /* refresh failed */ }
+            return null;
         }
 
         function getRoles(payload) {
@@ -865,28 +897,39 @@
         }
 
         // ---- Auth UI ----
-        const token = getJwtToken();
-        const payload = token ? parseJwt(token) : null;
-
-        if (token && payload && !isTokenExpired(payload)) {
-            // Authenticated user
+        function applyAuthUI(jwt) {
+            const p = parseJwt(jwt);
+            if (!p) return;
             document.getElementById('loginBtn').style.display = 'none';
             document.getElementById('userBadge').style.display = 'inline-flex';
-            document.getElementById('userName').textContent = getUserName(payload);
+            document.getElementById('userName').textContent = getUserName(p);
 
-            const roles = getRoles(payload);
+            const roles = getRoles(p);
             const isAdmin = roles.includes('ADMIN') || roles.includes('MODERATOR') || roles.includes('TEACHER');
 
             if (isAdmin) {
                 document.getElementById('createMeetingBtn').classList.add('show');
             } else {
-                // Show info banner for non-admin authenticated users
                 document.getElementById('infoBanner').classList.add('show');
             }
-        } else if (token) {
-            // Token expired — clear it
-            clearToken();
         }
+
+        (async function initAuth() {
+            let token = getJwtToken();
+            let payload = token ? parseJwt(token) : null;
+
+            if (token && payload && !isTokenExpired(payload)) {
+                applyAuthUI(token);
+            } else if (token) {
+                // Token expired — try refresh
+                const newToken = await refreshAccessToken();
+                if (newToken) {
+                    applyAuthUI(newToken);
+                } else {
+                    clearToken();
+                }
+            }
+        })();
 
         // ---- Participant emails list ----
         const participantEmails = [];
@@ -945,19 +988,22 @@
 
         // ---- Create Meeting API ----
         window.createMeeting = async function() {
-            const jwt = getJwtToken();
+            let jwt = getJwtToken();
             if (!jwt) {
                 showToast('Please sign in first.');
                 return;
             }
 
-            // Check expiry
+            // Check expiry — try refresh first
             const p = parseJwt(jwt);
             if (!p || isTokenExpired(p)) {
-                clearToken();
-                showToast('Session expired. Please sign in again.');
-                setTimeout(function() { window.location.href = '/login.html'; }, 1500);
-                return;
+                jwt = await refreshAccessToken();
+                if (!jwt) {
+                    clearToken();
+                    showToast('Session expired. Please sign in again.');
+                    setTimeout(function() { window.location.href = '/login.html'; }, 1500);
+                    return;
+                }
             }
 
             const title = document.getElementById('meetingTitle').value.trim();

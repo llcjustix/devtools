@@ -300,9 +300,11 @@
                     const dest = returnUrl || (roomName ? (window.location.origin + '/' + roomName) : '/welcome.html');
                     window.location.href = dest;
                 } else {
-                    // Expired — clear
+                    // Expired — clear all tokens
                     sessionStorage.removeItem('jitsi_jwt_token');
                     localStorage.removeItem('jitsi_jwt_token');
+                    sessionStorage.removeItem('jitsi_refresh_token');
+                    localStorage.removeItem('jitsi_refresh_token');
                 }
             } catch (e) { /* invalid token, let user login */ }
         }
@@ -357,9 +359,15 @@
                         throw new Error('No token received from authentication service');
                     }
 
-                    // Store token in both storages for persistence
+                    // Store tokens in both storages for persistence
                     sessionStorage.setItem('jitsi_jwt_token', jwtToken);
                     localStorage.setItem('jitsi_jwt_token', jwtToken);
+
+                    // Store refresh token if available
+                    if (data.refresh_token) {
+                        sessionStorage.setItem('jitsi_refresh_token', data.refresh_token);
+                        localStorage.setItem('jitsi_refresh_token', data.refresh_token);
+                    }
 
                     // Redirect to meeting room or welcome page
                     const dest = returnUrl || (roomName ? (window.location.origin + '/' + roomName) : '/welcome.html');
