@@ -52,6 +52,13 @@ RUN INJECT_SCRIPT=""; \
 # IMPORTANT: jitsi-room-validator.js must load BEFORE Jitsi app initializes
 RUN sed -i 's|</head>|<script src="custom-config.js"></script>\n<script src="jitsi-room-validator.js"></script>\n<script src="jitsi-auth.js"></script>\n<link rel="stylesheet" href="css/custom-styles.css">\n</head>|' /usr/share/jitsi-meet/index.html
 
+# Copy custom nginx config for serving LearnX HTML pages
+# Jitsi's init script appends this to meet.conf at container startup
+# Exact-match (=) locations take highest priority in nginx, so our
+# login.html/error.html/welcome.html are served directly instead of
+# being caught by the catch-all regex that rewrites to index.html
+COPY custom-meet.conf /config/nginx/custom-meet.conf
+
 # Set permissions
 RUN chmod 644 /usr/share/jitsi-meet/custom-config.js && \
     chmod 644 /usr/share/jitsi-meet/jitsi-auth.js && \
