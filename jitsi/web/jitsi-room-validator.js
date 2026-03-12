@@ -8,7 +8,7 @@
 (function() {
     'use strict';
 
-    console.log('[Jitsi Room Validator] Initializing room validation...');
+    console.log('[LearnX Room Validator] Initializing room validation...');
 
     // Get room name from URL (same way Jitsi does)
     const getRoomName = () => {
@@ -35,16 +35,23 @@
 
     const roomName = getRoomName();
 
-    // Skip validation for root path or static resources
-    if (!roomName || roomName === '' || roomName.includes('.')) {
-        console.log('[Jitsi Room Validator] Skipping validation for:', roomName);
+    // Root path — redirect to welcome landing page
+    if (!roomName || roomName === '') {
+        console.log('[LearnX Room Validator] Root path - redirecting to welcome page');
+        window.location.href = '/welcome.html';
         return;
     }
 
-    console.log('[Jitsi Room Validator] Validating room:', roomName);
+    // Skip validation for static resources
+    if (roomName.includes('.')) {
+        console.log('[LearnX Room Validator] Skipping validation for:', roomName);
+        return;
+    }
+
+    console.log('[LearnX Room Validator] Validating room:', roomName);
 
     const meetingServiceUrl = getMeetingServiceUrl();
-    console.log('[Jitsi Room Validator] Meeting service URL:', meetingServiceUrl);
+    console.log('[LearnX Room Validator] Meeting service URL:', meetingServiceUrl);
 
     // Show loading overlay
     const showLoadingOverlay = () => {
@@ -58,7 +65,7 @@
                     left: 0;
                     right: 0;
                     bottom: 0;
-                    background: linear-gradient(135deg, #2A3A4B 0%, #1a242f 100%);
+                    background: #faf8ff;
                     z-index: 999999;
                     display: flex;
                     align-items: center;
@@ -66,11 +73,11 @@
                 }
                 .validation-loader {
                     text-align: center;
-                    color: white;
+                    color: #6b7280;
                 }
                 .validation-spinner {
-                    border: 4px solid rgba(255, 255, 255, 0.1);
-                    border-left-color: #5DADE2;
+                    border: 4px solid #f0ecf9;
+                    border-left-color: #7c3aed;
                     border-radius: 50%;
                     width: 50px;
                     height: 50px;
@@ -90,10 +97,30 @@
         return overlay;
     };
 
-    // Get JWT token from browser storage
+    // Get JWT token from browser storage (sessionStorage → localStorage fallback)
     const getJwtToken = () => {
-        // Try sessionStorage first (single tab), then localStorage (persistent across tabs)
         return sessionStorage.getItem('jitsi_jwt_token') || localStorage.getItem('jitsi_jwt_token');
+    };
+
+    // Parse JWT payload
+    const parseJwt = (token) => {
+        try {
+            const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+            return JSON.parse(atob(base64));
+        } catch { return null; }
+    };
+
+    // Check if token is expired
+    const isTokenExpired = (token) => {
+        const payload = parseJwt(token);
+        if (!payload || !payload.exp) return true;
+        return (payload.exp * 1000) < Date.now();
+    };
+
+    // Clear stored tokens
+    const clearToken = () => {
+        sessionStorage.removeItem('jitsi_jwt_token');
+        localStorage.removeItem('jitsi_jwt_token');
     };
 
     // Validate user access for private meetings (browser-specific endpoint)
@@ -122,71 +149,84 @@
                 if (response.ok) {
                     // Meeting exists - get room info
                     return response.json().then(roomInfo => {
-                        console.log('[Jitsi Room Validator] ✓ Room found:', roomInfo);
+                        console.log('[LearnX Room Validator] ✓ Room found:', roomInfo);
                         console.log(`  - Title: ${roomInfo.title}`);
                         console.log(`  - Status: ${roomInfo.status}`);
                         console.log(`  - Public: ${!roomInfo.requireAuth}`);
 
                         // If public meeting, allow access immediately
                         if (!roomInfo.requireAuth) {
-                            console.log('[Jitsi Room Validator] ✓ Public meeting - access granted');
+                            console.log('[LearnX Room Validator] ✓ Public meeting - access granted');
                             overlay.remove();
                             return;
                         }
 
                         // Private meeting - need to validate access
-                        console.log('[Jitsi Room Validator] Private meeting - validating access...');
+                        console.log('[LearnX Room Validator] Private meeting - validating access...');
 
                         // Get JWT token from browser storage
-                        const jwtToken = getJwtToken();
+                        let jwtToken = getJwtToken();
+
+                        // Check if token exists and is not expired
+                        if (jwtToken && isTokenExpired(jwtToken)) {
+                            console.log('[LearnX Room Validator] Token expired - clearing and redirecting to login');
+                            clearToken();
+                            jwtToken = null;
+                        }
 
                         if (!jwtToken) {
-                            // No token - redirect to login (on same Jitsi server)
-                            console.log('[Jitsi Room Validator] No token found - redirecting to login');
+                            // No token or expired - redirect to login
+                            console.log('[LearnX Room Validator] No valid token - redirecting to login');
                             const redirectUrl = `/login.html?room=${roomName}&returnUrl=${window.location.origin}/${roomName}`;
                             window.location.href = redirectUrl;
                             return;
                         }
 
                         // Step 2: Validate user access with token
-                        console.log('[Jitsi Room Validator] Validating access with token...');
+                        console.log('[LearnX Room Validator] Validating access with token...');
                         validateUserAccess(roomName, jwtToken)
                             .then(validateResponse => {
                                 if (validateResponse.ok) {
                                     return validateResponse.json().then(accessInfo => {
-                                        console.log('[Jitsi Room Validator] Access validation response:', accessInfo);
+                                        console.log('[LearnX Room Validator] Access validation response:', accessInfo);
 
                                         if (accessInfo.allowed) {
-                                            console.log('[Jitsi Room Validator] ✓ Access granted');
+                                            console.log('[LearnX Room Validator] ✓ Access granted');
                                             overlay.remove();
                                         } else if (accessInfo.requireAuth) {
                                             // Token invalid/expired - redirect to login (on same Jitsi server)
-                                            console.log('[Jitsi Room Validator] Token invalid - redirecting to login');
+                                            console.log('[LearnX Room Validator] Token invalid - redirecting to login');
                                             const redirectUrl = `/login.html?room=${roomName}&returnUrl=${window.location.origin}/${roomName}`;
                                             window.location.href = redirectUrl;
                                         } else {
                                             // Access denied (not invited, etc.)
-                                            console.log('[Jitsi Room Validator] ✗ Access denied:', accessInfo.reason);
+                                            console.log('[LearnX Room Validator] ✗ Access denied:', accessInfo.reason);
                                             window.location.href = `/error.html?error=access-denied&room=${encodeURIComponent(roomName)}&reason=${encodeURIComponent(accessInfo.reason || 'Not authorized')}`;
                                         }
                                     });
+                                } else if (validateResponse.status === 401 || validateResponse.status === 403) {
+                                    // Token rejected by server — clear and redirect to login
+                                    console.log('[LearnX Room Validator] Server rejected token (', validateResponse.status, ') - redirecting to login');
+                                    clearToken();
+                                    const redirectUrl = `/login.html?room=${roomName}&returnUrl=${window.location.origin}/${roomName}`;
+                                    window.location.href = redirectUrl;
                                 } else {
                                     throw new Error(`Access validation failed: ${validateResponse.status}`);
                                 }
                             })
                             .catch(error => {
-                                console.error('[Jitsi Room Validator] Access validation error:', error);
+                                console.error('[LearnX Room Validator] Access validation error:', error);
                                 window.location.href = `/error.html?error=validation-error&room=${encodeURIComponent(roomName)}`;
                             });
                     });
                 } else if (response.status === 404) {
                     // Meeting not found
-                    console.log('[Jitsi Room Validator] ✗ Room not found');
+                    console.log('[LearnX Room Validator] ✗ Room not found');
                     window.location.href = `/error.html?error=meeting-not-found&room=${encodeURIComponent(roomName)}`;
                 } else if (response.status === 403) {
                     // Forbidden - authenticated but not invited
                     return response.json().then(roomInfo => {
-                        console.log('[Jitsi Room Validator] ✗ Access denied - not invited:', roomInfo);
+                        console.log('[LearnX Room Validator] ✗ Access denied - not invited:', roomInfo);
                         window.location.href = `/error.html?error=access-denied&room=${encodeURIComponent(roomName)}&title=${encodeURIComponent(roomInfo.title || '')}`;
                     }).catch(() => {
                         window.location.href = `/error.html?error=access-denied&room=${encodeURIComponent(roomName)}`;
@@ -194,19 +234,19 @@
                 } else if (response.status === 410) {
                     // Meeting ended - try to get status info
                     return response.json().then(roomInfo => {
-                        console.log('[Jitsi Room Validator] ✗ Meeting ended:', roomInfo);
+                        console.log('[LearnX Room Validator] ✗ Meeting ended:', roomInfo);
                         window.location.href = `/error.html?error=meeting-ended&room=${encodeURIComponent(roomName)}&title=${encodeURIComponent(roomInfo.title || '')}`;
                     }).catch(() => {
                         window.location.href = `/error.html?error=meeting-ended&room=${encodeURIComponent(roomName)}`;
                     });
                 } else {
                     // Other error
-                    console.log('[Jitsi Room Validator] ✗ Validation failed:', response.status);
+                    console.log('[LearnX Room Validator] ✗ Validation failed:', response.status);
                     window.location.href = `/error.html?error=service-error&room=${encodeURIComponent(roomName)}`;
                 }
             })
             .catch(error => {
-                console.error('[Jitsi Room Validator] ✗ Validation error:', error);
+                console.error('[LearnX Room Validator] ✗ Validation error:', error);
                 window.location.href = `/error.html?error=service-error&reason=${encodeURIComponent(error.message)}&room=${encodeURIComponent(roomName)}`;
             });
     };

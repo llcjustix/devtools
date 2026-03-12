@@ -39,7 +39,7 @@
         return `${protocol}//${hostname.replace('meet.', '')}`;
     })();
 
-    console.log('[JustIX Auth] Meeting Service URL:', meetingServiceUrl);
+    console.log('[LearnX Meets] Meeting Service URL:', meetingServiceUrl);
 
     /**
      * Authentication is handled by Spring Security + Prosody.
@@ -68,15 +68,15 @@
         // After login, user will be redirected back to this page
         const loginUrl = `${meetingServiceUrl}/oauth2/authorization/keycloak`;
 
-        console.log('[JustIX Auth] Redirecting to login...');
-        console.log('[JustIX Auth] Current URL:', currentUrl);
-        console.log('[JustIX Auth] Login URL:', loginUrl);
+        console.log('[LearnX Meets] Redirecting to login...');
+        console.log('[LearnX Meets] Current URL:', currentUrl);
+        console.log('[LearnX Meets] Login URL:', loginUrl);
 
         // Store current URL to return after login
         try {
             sessionStorage.setItem('jitsi_return_url', currentUrl);
         } catch (e) {
-            console.warn('[JustIX Auth] Could not store return URL:', e);
+            console.warn('[LearnX Meets] Could not store return URL:', e);
         }
 
         // Redirect to Spring Security login endpoint
@@ -87,7 +87,7 @@
      * Handle connection errors from Jitsi
      */
     function handleConnectionError(error) {
-        console.log('[JustIX Auth] Connection error:', error);
+        console.log('[LearnX Meets] Connection error:', error);
 
         // Extract room name from URL
         const roomName = window.location.pathname.substring(1);
@@ -114,7 +114,7 @@
 
         // Redirect to error page
         const errorUrl = `/error.html?error=${errorType}&reason=${encodeURIComponent(errorReason)}&room=${encodeURIComponent(roomName)}`;
-        console.log('[JustIX Auth] Redirecting to error page:', errorUrl);
+        console.log('[LearnX Meets] Redirecting to error page:', errorUrl);
         window.location.href = errorUrl;
     }
 
@@ -122,10 +122,10 @@
      * Initialize authentication (currently passive - Prosody handles validation)
      */
     function initAuth() {
-        console.log('[JustIX Auth] Authentication integration loaded');
-        console.log('[JustIX Auth] Spring Security session will be validated by Prosody');
-        console.log('[JustIX Auth] For private meetings: login required');
-        console.log('[JustIX Auth] For public meetings: anonymous access allowed');
+        console.log('[LearnX Meets] Authentication integration loaded');
+        console.log('[LearnX Meets] Spring Security session will be validated by Prosody');
+        console.log('[LearnX Meets] For private meetings: login required');
+        console.log('[LearnX Meets] For public meetings: anonymous access allowed');
 
         // Listen for Jitsi conference errors
         if (window.APP) {

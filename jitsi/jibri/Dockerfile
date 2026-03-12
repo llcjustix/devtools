@@ -1,5 +1,6 @@
 # Using official Jitsi Jibri image as base
-FROM jitsi/jibri:stable-9258
+ARG JITSI_JIBRI_VERSION=stable-9955
+FROM jitsi/jibri:${JITSI_JIBRI_VERSION}
 
 # Fix repository issues and install dependencies for finalize script
 RUN rm -f /etc/apt/sources.list.d/backports.list && \

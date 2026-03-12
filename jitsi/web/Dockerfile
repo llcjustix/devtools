@@ -1,7 +1,9 @@
-FROM jitsi/web:stable-9258
+ARG JITSI_WEB_VERSION=stable-9955
+FROM jitsi/web:${JITSI_WEB_VERSION}
 
-# Build argument for meeting service URL (optional, for production)
+# Build arguments for service URLs (optional, for production)
 ARG MEETING_SERVICE_URL
+ARG AUTH_SERVICE_URL
 
 # Copy custom config overrides (disable recording UI prompts, dynamic URLs)
 COPY custom-config.js /usr/share/jitsi-meet/custom-config.js
@@ -9,9 +11,10 @@ COPY custom-config.js /usr/share/jitsi-meet/custom-config.js
 # Copy custom CSS styles
 COPY custom-styles.css /usr/share/jitsi-meet/css/custom-styles.css
 
-# Copy LearnX logos
-COPY images/learnx-logo.svg /usr/share/jitsi-meet/images/learnx-logo.svg
-COPY images/learnx-watermark.svg /usr/share/jitsi-meet/images/learnx-watermark.svg
+# Copy LearnX Meets logos and icons
+COPY images/justix-logo.svg /usr/share/jitsi-meet/images/justix-logo.svg
+COPY images/justix-icon.svg /usr/share/jitsi-meet/images/justix-icon.svg
+COPY images/justix-watermark.svg /usr/share/jitsi-meet/images/justix-watermark.svg
 
 # Copy custom branding files
 COPY title.html /usr/share/jitsi-meet/title.html
@@ -23,13 +26,26 @@ COPY jitsi-room-validator.js /usr/share/jitsi-meet/jitsi-room-validator.js
 COPY login.html /usr/share/jitsi-meet/login.html
 COPY error.html /usr/share/jitsi-meet/error.html
 
-# Inject meeting service URL into HTML if provided (makes it available to JavaScript)
-# This allows production deployments to override the URL detection logic
-RUN if [ -n "$MEETING_SERVICE_URL" ]; then \
+# Copy welcome/landing page
+COPY welcome.html /usr/share/jitsi-meet/welcome.html
+
+# Copy Nginx Lua room validator for server-side validation
+COPY validate-room.lua /usr/share/jitsi-meet/validate-room.lua
+
+# Inject service URLs into HTML pages if provided
+RUN INJECT_SCRIPT=""; \
+    if [ -n "$MEETING_SERVICE_URL" ]; then \
         echo "Injecting MEETING_SERVICE_URL: $MEETING_SERVICE_URL"; \
-        sed -i "s|</head>|<script>window.MEETING_SERVICE_URL='$MEETING_SERVICE_URL';</script>\n</head>|" /usr/share/jitsi-meet/index.html; \
-    else \
-        echo "No MEETING_SERVICE_URL provided - will use auto-detection"; \
+        INJECT_SCRIPT="window.MEETING_SERVICE_URL='$MEETING_SERVICE_URL';"; \
+    fi; \
+    if [ -n "$AUTH_SERVICE_URL" ]; then \
+        echo "Injecting AUTH_SERVICE_URL: $AUTH_SERVICE_URL"; \
+        INJECT_SCRIPT="${INJECT_SCRIPT}window.AUTH_SERVICE_URL='$AUTH_SERVICE_URL';"; \
+    fi; \
+    if [ -n "$INJECT_SCRIPT" ]; then \
+        sed -i "s|</head>|<script>${INJECT_SCRIPT}</script>\n</head>|" /usr/share/jitsi-meet/index.html; \
+        sed -i "s|</head>|<script>${INJECT_SCRIPT}</script>\n</head>|" /usr/share/jitsi-meet/login.html; \
+        sed -i "s|</head>|<script>${INJECT_SCRIPT}</script>\n</head>|" /usr/share/jitsi-meet/welcome.html; \
     fi
 
 # Inject custom config, room validator, auth, and styles into index.html
@@ -42,9 +58,12 @@ RUN chmod 644 /usr/share/jitsi-meet/custom-config.js && \
     chmod 644 /usr/share/jitsi-meet/jitsi-room-validator.js && \
     chmod 644 /usr/share/jitsi-meet/login.html && \
     chmod 644 /usr/share/jitsi-meet/error.html && \
+    chmod 644 /usr/share/jitsi-meet/welcome.html && \
     chmod 644 /usr/share/jitsi-meet/index.html && \
     chmod 644 /usr/share/jitsi-meet/css/custom-styles.css && \
-    chmod 644 /usr/share/jitsi-meet/images/learnx-logo.svg && \
-    chmod 644 /usr/share/jitsi-meet/images/learnx-watermark.svg && \
+    chmod 644 /usr/share/jitsi-meet/images/justix-logo.svg && \
+    chmod 644 /usr/share/jitsi-meet/images/justix-icon.svg && \
+    chmod 644 /usr/share/jitsi-meet/images/justix-watermark.svg && \
     chmod 644 /usr/share/jitsi-meet/title.html && \
-    chmod 644 /usr/share/jitsi-meet/manifest.json
+    chmod 644 /usr/share/jitsi-meet/manifest.json && \
+    chmod 644 /usr/share/jitsi-meet/validate-room.lua

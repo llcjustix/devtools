@@ -1,5 +1,6 @@
 # Using official Jitsi Prosody image as base
-FROM jitsi/prosody:stable-9258
+ARG JITSI_PROSODY_VERSION=stable-9955
+FROM jitsi/prosody:${JITSI_PROSODY_VERSION}
 
 # Fix repository issues and install Lua dependencies
 RUN rm -f /etc/apt/sources.list.d/prosody.list && \

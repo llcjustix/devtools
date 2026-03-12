@@ -1,185 +1,376 @@
-/* Custom styles for LearnX */
+/* LearnX Meets - Custom Styles */
+/* Light purple brand theme inspired by Google Meet's clean design */
 
-/* Primary brand colors */
 :root {
-    --learnx-primary: #8a2be2;      /* Purple (BlueViolet) */
-    --learnx-primary-dark: #6a1bb2; /* Dark purple */
-    --learnx-bg-dark: #000000;      /* Black background */
-    --learnx-bg-light: #1a1a1a;     /* Dark gray background */
-    --learnx-accent: #9932cc;       /* Dark orchid accent */
-    --learnx-text: #e8e8e8;         /* Light text */
-}
-
-/* Purple theme for buttons and accents - keeping original Jitsi layout */
-
-/* Default toolbar buttons - purple when active/unmuted */
-.toolbox-button,
-button[class*="toolbox-button"],
-.action-button,
-div[class*="Toolbox"] button {
-    background-color: rgba(138, 43, 226, 0.7) !important; /* Semi-transparent purple */
-    transition: background-color 0.2s ease !important;
-}
-
-.toolbox-button:hover,
-button[class*="toolbox-button"]:hover,
-.action-button:hover,
-div[class*="Toolbox"] button:hover {
-    background-color: var(--learnx-primary) !important;
-}
-
-/* Primary action buttons */
-button.primary,
-.button-primary,
-[class*="PrimaryButton"] {
-    background-color: var(--learnx-primary) !important;
-    border-color: var(--learnx-primary) !important;
-}
-
-button.primary:hover,
-.button-primary:hover,
-[class*="PrimaryButton"]:hover {
-    background-color: var(--learnx-primary-dark) !important;
-}
-
-/* Active/toggled buttons (when feature is ON) */
-.toolbox-button.toggled,
-[class*="toggled"],
-.toolbox-button[aria-pressed="true"],
-button[aria-pressed="true"] {
-    background-color: var(--learnx-primary-dark) !important;
-}
-
-/* Muted/disabled buttons (when feature is OFF) - Red color */
-.toolbox-button.audio-mute,
-.toolbox-button.video-mute,
-button[class*="audio-mute"],
-button[class*="video-mute"],
-.toolbox-button[class*="disabled"],
-button.disabled {
-    background-color: #dc3545 !important; /* Red for muted/disabled */
-}
-
-/* Hover on muted buttons */
-.toolbox-button.audio-mute:hover,
-.toolbox-button.video-mute:hover,
-button[class*="audio-mute"]:hover,
-button[class*="video-mute"]:hover {
-    background-color: #c82333 !important; /* Darker red */
-}
-
-/* Join/Start meeting button */
-[class*="prejoin"] button[class*="primary"],
-[class*="ActionButton"] {
-    background-color: var(--learnx-primary) !important;
-}
-
-[class*="prejoin"] button[class*="primary"]:hover,
-[class*="ActionButton"]:hover {
-    background-color: var(--learnx-primary-dark) !important;
+    --lx-primary: #7c3aed;
+    --lx-primary-light: #9b6dff;
+    --lx-primary-dark: #6d28d9;
+    --lx-primary-bg: #f5f0ff;
+    --lx-surface: #faf8ff;
+    --lx-text: #1f1f1f;
+    --lx-text-muted: #6b7280;
+    --lx-danger: #dc2626;
+    --lx-danger-dark: #b91c1c;
+    --lx-warning: #f59e0b;
+    --lx-success: #059669;
 }
 
 /* ========================================
-   TOOLBAR BUTTON STATES (Video, Audio, etc.)
+   TOOLBAR BUTTONS - Clean Google Meet style
    ======================================== */
 
-/* Default state - Gray/Inactive */
-div[class*="Toolbox"] button:not(.toggled):not([class*="active"]) {
-    background-color: rgba(255, 255, 255, 0.1) !important; /* Light gray */
+/* Default toolbar buttons - round, smooth transitions */
+div[class*="Toolbox"] button,
+.toolbox-button,
+button[class*="toolbox-button"] {
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    border-radius: 50% !important;
+    position: relative;
 }
 
-/* Active/Enabled state - Purple (when video/audio is ON) */
+/* Ripple-like focus ring */
+div[class*="Toolbox"] button:focus-visible {
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.3) !important;
+    outline: none !important;
+}
+
+/* Inactive state - soft neutral */
+div[class*="Toolbox"] button:not(.toggled):not([class*="active"]):not([class*="muted"]):not([class*="disabled"]) {
+    background-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+/* Active/Enabled state - Purple (video/audio is ON) */
 div[class*="Toolbox"] button.toggled,
 div[class*="Toolbox"] button[class*="active"],
 button[data-testid*="mute"]:not([class*="muted"]),
-button[data-testid*="video"]:not([class*="muted"]) {
-    background-color: var(--learnx-primary) !important; /* Purple when active */
+button[data-testid*="video"]:not([class*="muted"]),
+button[aria-label*="Mute audio"]:not([class*="muted"]),
+button[aria-label*="Stop camera"]:not([class*="muted"]) {
+    background-color: var(--lx-primary) !important;
 }
 
-/* Disabled/Muted state - Red (when video/audio is OFF) */
+/* Muted/Disabled state - Red (video/audio is OFF) */
 div[class*="Toolbox"] button[class*="muted"],
 div[class*="Toolbox"] button[class*="disabled"],
 button[data-testid*="mute"][class*="muted"],
 button[data-testid*="video"][class*="muted"],
+button[aria-label*="Unmute audio"],
+button[class*="audio"][class*="muted"],
+button[aria-label*="Start camera"],
+button[class*="video"][class*="muted"],
 .audio-preview button[aria-label*="Muted"],
 .video-preview button[aria-label*="Stop"] {
-    background-color: #dc3545 !important; /* Red when muted/off */
+    background-color: var(--lx-danger) !important;
 }
 
-/* Hover states */
+/* Hover states - lift + glow */
 div[class*="Toolbox"] button:hover {
-    opacity: 0.9 !important;
-    transform: scale(1.05) !important;
-    transition: all 0.2s ease !important;
+    opacity: 0.92 !important;
+    transform: scale(1.08) translateY(-2px) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+div[class*="Toolbox"] button[class*="muted"]:hover,
+div[class*="Toolbox"] button[class*="disabled"]:hover {
+    background-color: var(--lx-danger-dark) !important;
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3) !important;
 }
 
-/* Specific button selectors for audio/video */
-/* Audio button - when unmuted (purple) */
-button[aria-label*="Mute audio"]:not([class*="muted"]),
-button[aria-label*="Unmute"]:not([class*="muted"]) {
-    background-color: var(--learnx-primary) !important;
-}
-
-/* Audio button - when muted (red) */
-button[aria-label*="Unmute audio"],
-button[class*="audio"][class*="muted"] {
-    background-color: #dc3545 !important;
-}
-
-/* Video button - when enabled (purple) */
-button[aria-label*="Stop camera"]:not([class*="muted"]),
-button[aria-label*="Start camera"]:not([class*="muted"]) {
-    background-color: var(--learnx-primary) !important;
-}
-
-/* Video button - when disabled (red) */
-button[aria-label*="Start camera"],
-button[class*="video"][class*="muted"] {
-    background-color: #dc3545 !important;
-}
-
-/* Share screen button - active state */
-button[aria-label*="Stop sharing"],
-button[class*="desktop"][class*="toggled"] {
-    background-color: var(--learnx-primary-dark) !important;
-}
-
-/* Raise hand button - active state */
-button[aria-label*="Lower hand"],
-button[class*="raisehand"][class*="toggled"] {
-    background-color: #ffc107 !important; /* Yellow when hand is raised */
-}
-
-/* Chat/Participants buttons - active state */
-button[class*="chat-counter"],
-button[class*="participants-pane"] {
-    background-color: var(--learnx-primary) !important;
-}
-
-/* Reactions button - active state */
-button[class*="reactions"][class*="toggled"] {
-    background-color: var(--learnx-primary-dark) !important;
+/* Active press - squish */
+div[class*="Toolbox"] button:active,
+button[class*="toolbox-button"]:active {
+    background-color: var(--lx-primary-dark) !important;
+    transform: scale(0.92) !important;
+    transition-duration: 0.08s !important;
 }
 
 /* ========================================
-   UNIVERSAL BUTTON STATE STYLES
+   HANGUP BUTTON - Red pill shape
    ======================================== */
 
-/* Force color change on click/active */
-div[class*="Toolbox"] button:active,
-button[class*="toolbox-button"]:active {
-    background-color: var(--learnx-primary-dark) !important;
-    transform: scale(0.95) !important;
+button[aria-label*="Leave"],
+button[aria-label*="Hang up"],
+button[data-testid*="hangup"],
+div[class*="hangup"] button {
+    background-color: var(--lx-danger) !important;
+    border-radius: 24px !important;
+    padding: 0 24px !important;
+    min-width: 56px;
+}
+button[aria-label*="Leave"]:hover,
+button[aria-label*="Hang up"]:hover,
+button[data-testid*="hangup"]:hover,
+div[class*="hangup"] button:hover {
+    background-color: var(--lx-danger-dark) !important;
+    box-shadow: 0 4px 16px rgba(220, 38, 38, 0.4) !important;
+    transform: scale(1.05) translateY(-2px) !important;
 }
 
-/* Ensure transitions work */
+/* ========================================
+   PRIMARY BUTTONS (Join, Start, etc.)
+   ======================================== */
+
+button.primary,
+.button-primary,
+[class*="PrimaryButton"],
+[class*="prejoin"] button[class*="primary"],
+[class*="ActionButton"] {
+    background-color: var(--lx-primary) !important;
+    border-color: var(--lx-primary) !important;
+    border-radius: 24px !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    position: relative;
+    overflow: hidden;
+}
+
+button.primary:hover,
+.button-primary:hover,
+[class*="PrimaryButton"]:hover,
+[class*="prejoin"] button[class*="primary"]:hover,
+[class*="ActionButton"]:hover {
+    background-color: var(--lx-primary-dark) !important;
+    box-shadow: 0 6px 20px rgba(124, 58, 237, 0.35) !important;
+    transform: translateY(-2px) !important;
+}
+
+button.primary:active,
+.button-primary:active,
+[class*="PrimaryButton"]:active,
+[class*="ActionButton"]:active {
+    transform: translateY(0) scale(0.98) !important;
+    transition-duration: 0.1s !important;
+}
+
+/* ========================================
+   SPECIAL BUTTON STATES
+   ======================================== */
+
+/* Raise hand - amber with bounce */
+button[aria-label*="Lower hand"],
+button[class*="raisehand"][class*="toggled"] {
+    background-color: var(--lx-warning) !important;
+    animation: raiseHandPulse 1.5s ease-in-out infinite !important;
+}
+@keyframes raiseHandPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
+    50% { box-shadow: 0 0 0 8px rgba(245, 158, 11, 0); }
+}
+
+/* Share screen active - purple glow */
+button[aria-label*="Stop sharing"],
+button[class*="desktop"][class*="toggled"] {
+    background-color: var(--lx-primary-dark) !important;
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2) !important;
+}
+
+/* Chat / Participants active */
+button[class*="chat-counter"],
+button[class*="participants-pane"] {
+    background-color: var(--lx-primary) !important;
+}
+
+/* Reactions active */
+button[class*="reactions"][class*="toggled"] {
+    background-color: var(--lx-primary-dark) !important;
+}
+
+/* ========================================
+   PREJOIN / LOBBY SCREEN
+   ======================================== */
+
+[class*="prejoin"] {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+/* Prejoin container - subtle entrance animation */
+[class*="prejoin-preview"],
+[class*="premeeting-screen"] {
+    animation: prejoinFadeIn 0.5s ease !important;
+}
+@keyframes prejoinFadeIn {
+    from { opacity: 0; transform: scale(0.97); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+/* Prejoin input fields */
+[class*="prejoin"] input[type="text"],
+[class*="prejoin"] input[name="displayname"] {
+    border-radius: 12px !important;
+    border: 1.5px solid #e5ddf5 !important;
+    padding: 12px 16px !important;
+    transition: border-color 0.2s, box-shadow 0.2s !important;
+}
+[class*="prejoin"] input:focus {
+    border-color: var(--lx-primary) !important;
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1) !important;
+}
+
+/* ========================================
+   NOTIFICATIONS & TOASTS
+   ======================================== */
+
+[class*="oticeable"],
+[class*="oticeable"] {
+    color: var(--lx-primary) !important;
+}
+
+/* Toast notifications - slide in animation */
+[class*="notification"],
+[class*="Notification"] {
+    animation: notifSlideIn 0.35s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    border-radius: 12px !important;
+}
+@keyframes notifSlideIn {
+    from { opacity: 0; transform: translateX(100%); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+/* ========================================
+   CHAT PANEL
+   ======================================== */
+
+/* Chat messages - stagger animation */
+[class*="chatMessageGroup"] {
+    animation: chatMsgIn 0.3s ease !important;
+}
+@keyframes chatMsgIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Chat send button */
+[class*="chat"] button[type="submit"],
+[class*="chat-input"] button {
+    background-color: var(--lx-primary) !important;
+    border-radius: 50% !important;
+    transition: all 0.2s ease !important;
+}
+[class*="chat"] button[type="submit"]:hover,
+[class*="chat-input"] button:hover {
+    background-color: var(--lx-primary-dark) !important;
+    transform: scale(1.1) !important;
+}
+
+/* ========================================
+   PARTICIPANTS PANEL
+   ======================================== */
+
+[class*="participants-pane"] [class*="participant-item"]:hover,
+[class*="MeetingParticipantItem"]:hover {
+    background-color: var(--lx-primary-bg) !important;
+    border-radius: 10px !important;
+}
+
+/* ========================================
+   SIDE PANELS (Chat, Participants, etc.)
+   ======================================== */
+
+[class*="side-panel"],
+[class*="SidePanel"] {
+    animation: panelSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+@keyframes panelSlideIn {
+    from { opacity: 0; transform: translateX(24px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+/* ========================================
+   VIDEO TILES
+   ======================================== */
+
+/* Tile view - subtle entrance */
+[class*="videocontainer"],
+[class*="VideoContainer"] {
+    border-radius: 12px !important;
+    overflow: hidden !important;
+    transition: box-shadow 0.3s ease !important;
+}
+
+/* Speaking indicator glow */
+[class*="videocontainer"][class*="speaking"],
+[class*="dominant-speaker"] {
+    box-shadow: 0 0 0 3px var(--lx-primary), 0 0 16px rgba(124, 58, 237, 0.25) !important;
+}
+
+/* ========================================
+   MODALS & DIALOGS
+   ======================================== */
+
+[class*="dialog"],
+[class*="Dialog"],
+[class*="modal"] {
+    border-radius: 16px !important;
+    animation: dialogIn 0.25s ease !important;
+}
+@keyframes dialogIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+/* Dialog buttons */
+[class*="dialog"] button[class*="primary"],
+[class*="Dialog"] button[class*="primary"] {
+    background-color: var(--lx-primary) !important;
+    border-radius: 12px !important;
+}
+
+/* ========================================
+   FILMSTRIP (bottom thumbnails)
+   ======================================== */
+
+[class*="filmstrip"] [class*="thumbnail"] {
+    border-radius: 10px !important;
+    transition: all 0.25s ease !important;
+}
+[class*="filmstrip"] [class*="thumbnail"]:hover {
+    transform: scale(1.05) !important;
+    z-index: 1;
+}
+
+/* ========================================
+   LOBBY SCREEN
+   ======================================== */
+
+[class*="lobby-screen"],
+[class*="LobbyScreen"] {
+    animation: lobbyIn 0.6s ease !important;
+}
+@keyframes lobbyIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ========================================
+   GENERAL UI POLISH
+   ======================================== */
+
+/* Smooth transitions everywhere */
 div[class*="Toolbox"] button,
 button[class*="toolbox-button"] {
-    transition: background-color 0.2s ease, transform 0.1s ease !important;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
-/* Override any conflicting Jitsi styles */
+/* Override conflicting Jitsi specificity */
 div[class*="Toolbox"] > * button,
 div[class*="toolbox-content"] button {
     background-color: inherit !important;
+}
+
+/* Scrollbar styling for panels */
+[class*="side-panel"] *::-webkit-scrollbar,
+[class*="SidePanel"] *::-webkit-scrollbar {
+    width: 6px;
+}
+[class*="side-panel"] *::-webkit-scrollbar-thumb,
+[class*="SidePanel"] *::-webkit-scrollbar-thumb {
+    background: var(--lx-primary-light);
+    border-radius: 3px;
+}
+[class*="side-panel"] *::-webkit-scrollbar-track,
+[class*="SidePanel"] *::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+/* Focus ring global */
+*:focus-visible {
+    outline-color: var(--lx-primary) !important;
 }

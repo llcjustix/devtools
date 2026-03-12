@@ -1,24 +1,24 @@
 {
-  "short_name": "LearnX",
-  "name": "LearnX Meeting",
-  "description": "Professional video conferencing for LearnX Academy",
+  "short_name": "LearnX Meets",
+  "name": "LearnX Meets",
+  "description": "Secure video meetings for LearnX Academy",
   "icons": [
     {
-      "src": "images/learnx-logo.svg",
+      "src": "images/justix-icon.svg",
       "type": "image/svg+xml",
       "sizes": "any"
     },
     {
-      "src": "images/learnx-watermark.svg",
+      "src": "images/justix-watermark.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "maskable"
     }
   ],
   "start_url": "/",
-  "background_color": "#FFFFFF",
+  "background_color": "#faf8ff",
   "display": "standalone",
   "scope": "/",
-  "theme_color": "#2A3A4B",
+  "theme_color": "#7c3aed",
   "orientation": "any"
 }

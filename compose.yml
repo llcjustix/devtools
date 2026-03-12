@@ -2,7 +2,7 @@ services:
   #------------------------------------------ PostgreSQL Database ------------------------------------------------------
   postgres:
     container_name: postgresql
-    image: postgres:latest
+    image: postgres:${POSTGRES_VERSION}
     command: [ "postgres", "-c", "max_connections=200", "-c", "shared_buffers=24MB", "-c", "listen_addresses=*" ]
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
@@ -23,7 +23,7 @@ services:
   #------------------------------------------- Keycloak ----------------------------------------------------------------
   keycloak:
     container_name: keycloak
-    image: quay.io/keycloak/keycloak:latest
+    image: quay.io/keycloak/keycloak:${KEYCLOAK_VERSION}
     command: [ "start-dev", "--import-realm", "--hostname-strict=false" ]
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME}
@@ -56,7 +56,7 @@ services:
   #------------------------------------------- Keycloak Init------------------------------------------------------------
   keycloak-init:
     container_name: keycloak-init
-    image: postgres:latest
+    image: postgres:${POSTGRES_VERSION}
     depends_on:
       keycloak:
         condition: service_healthy
@@ -68,7 +68,7 @@ services:
   #------------------------------------------ Redis --------------------------------------------------------------------
   redis:
     container_name: redis
-    image: redis:latest
+    image: redis:${REDIS_VERSION}
     ports:
       - "6379:6379"
     environment:
@@ -86,7 +86,7 @@ services:
   #------------------------------------------ Redis insight -------------------------------------------------------------#
   redis-insight:
     container_name: redis-insight
-    image: redis/redisinsight:latest
+    image: redis/redisinsight:${REDIS_INSIGHT_VERSION}
     restart: always
     ports:
       - '5540:5540'
@@ -102,7 +102,7 @@ services:
   #--------------------------------------------- MinIO ------------------------------------------------------------------#
   minio:
     container_name: minio
-    image: minio/minio:latest
+    image: minio/minio:${MINIO_VERSION}
     restart: unless-stopped
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-admin}
@@ -124,7 +124,7 @@ services:
   #---------------------------------------------------KAFKA-------------------------------------------------------------
   kafka:
     container_name: kafka
-    image: confluentinc/cp-kafka:7.7.1
+    image: confluentinc/cp-kafka:${KAFKA_VERSION}
     restart: always
     ports:
       - '9092:9092'
@@ -159,7 +159,7 @@ services:
   #------------------------------------------------------KAFKA-UI-------------------------------------------------------
   kafka-ui:
     container_name: kafka-ui
-    image: provectuslabs/kafka-ui:latest
+    image: provectuslabs/kafka-ui:${KAFKA_UI_VERSION}
     restart: always
     ports:
       - '8000:8080'
@@ -189,13 +189,11 @@ services:
     build:
       context: ./jitsi/prosody
       dockerfile: Dockerfile
-    image: justix/jitsi-prosody:latest
+      args:
+        JITSI_PROSODY_VERSION: ${JITSI_PROSODY_VERSION}
+    image: justix/jitsi-prosody:${JITSI_PROSODY_VERSION}
     container_name: jitsi-prosody
     restart: unless-stopped
-    expose:
-      - '5222'
-      - '5347'
-      - '5280'
     healthcheck:
       test: ["CMD-SHELL", "pgrep -f prosody > /dev/null || exit 1"]
       interval: 10s
@@ -204,11 +202,11 @@ services:
       start_period: 20s
     environment:
       - ENABLE_AUTH=1
-      - ENABLE_GUESTS=1
+      - ENABLE_GUESTS=0
       - AUTH_TYPE=jwt
       - JWT_APP_ID=jitsi
       - JWT_APP_SECRET=${JWT_APP_SECRET}
-      - JWT_ALLOW_EMPTY=1
+      - JWT_ALLOW_EMPTY=0
       - XMPP_DOMAIN=meet.jitsi
       - XMPP_AUTH_DOMAIN=auth.meet.jitsi
       - XMPP_MUC_DOMAIN=muc.meet.jitsi
@@ -236,7 +234,7 @@ services:
 
   # Jicofo (conference focus)
   jitsi-jicofo:
-    image: jitsi/jicofo:stable-9258
+    image: jitsi/jicofo:${JITSI_JICOFO_VERSION}
     container_name: jitsi-jicofo
     restart: unless-stopped
     environment:
@@ -259,7 +257,7 @@ services:
 
   # JVB (video bridge)
   jitsi-jvb:
-    image: jitsi/jvb:stable-9258
+    image: jitsi/jvb:${JITSI_JVB_VERSION}
     container_name: jitsi-jvb
     restart: unless-stopped
     ports:
@@ -288,7 +286,11 @@ services:
     build:
       context: ./jitsi/web
       dockerfile: Dockerfile
-    image: justix/jitsi-web:latest
+      args:
+        JITSI_WEB_VERSION: ${JITSI_WEB_VERSION}
+        MEETING_SERVICE_URL: ${MEETING_SERVICE_URL}
+        AUTH_SERVICE_URL: ${AUTH_SERVICE_URL}
+    image: justix/jitsi-web:${JITSI_WEB_VERSION}
     container_name: jitsi-web
     restart: unless-stopped
     ports:
@@ -296,11 +298,11 @@ services:
       - "8001:80"
     environment:
       - ENABLE_AUTH=1
-      - ENABLE_GUESTS=1
+      - ENABLE_GUESTS=0
       - AUTH_TYPE=jwt
       - JWT_APP_ID=jitsi
       - JWT_APP_SECRET=${JWT_APP_SECRET}
-      - JWT_ALLOW_EMPTY=1
+      - JWT_ALLOW_EMPTY=0
       - XMPP_DOMAIN=meet.jitsi
       - XMPP_AUTH_DOMAIN=auth.meet.jitsi
       - XMPP_MUC_DOMAIN=muc.meet.jitsi
@@ -312,7 +314,7 @@ services:
       - DROPBOX_REDIRECT_URI=""
       - ENABLE_FILE_RECORDING_SERVICE=0
       - ENABLE_TRANSCRIPTIONS=0
-      - DISABLE_HTTPS=1
+      - DISABLE_HTTPS=${DISABLE_HTTPS}
       - ENABLE_WELCOME_PAGE=0
       - ENABLE_CLOSE_PAGE=0
       - TZ=UTC
@@ -327,7 +329,9 @@ services:
     build:
       context: ./jitsi/jibri
       dockerfile: Dockerfile
-    image: justix/jitsi-jibri:latest
+      args:
+        JITSI_JIBRI_VERSION: ${JITSI_JIBRI_VERSION}
+    image: justix/jitsi-jibri:${JITSI_JIBRI_VERSION}
     container_name: jitsi-jibri
     restart: unless-stopped
     privileged: true

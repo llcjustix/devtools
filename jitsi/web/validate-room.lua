@@ -19,6 +19,7 @@ if not room_name or
    room_name == "external_api.js" or
    room_name == "login.html" or
    room_name == "error.html" or
+   room_name == "welcome.html" or
    room_name:match("^static/") or
    room_name:match("^libs/") or
    room_name:match("^css/") or
@@ -33,7 +34,7 @@ local httpc = http.new()
 httpc:set_timeout(2000)  -- 2 second timeout
 
 local meeting_service_url = os.getenv("MEETING_SERVICE_URL") or "http://host.docker.internal:2031"
-local validation_url = meeting_service_url .. "/api/meetings/check-room/" .. room_name
+local validation_url = meeting_service_url .. "/webhooks/jitsi/check-room-status/" .. room_name
 
 local res, err = httpc:request_uri(validation_url, {
     method = "GET",

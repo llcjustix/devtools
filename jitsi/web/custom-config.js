@@ -1,4 +1,4 @@
-// Custom config overrides for JustIX Academy
+// Custom config overrides for LearnX Meets
 // This file contains configuration that disables default Jitsi recording UI
 // and enforces backend-controlled recording logic
 
@@ -6,7 +6,7 @@
 const meetingServiceUrl = (() => {
     // 1. Check if injected via Docker build arg (production)
     if (window.MEETING_SERVICE_URL) {
-        console.log('[JustIX] Using injected MEETING_SERVICE_URL:', window.MEETING_SERVICE_URL);
+        console.log('[LearnX Meets] Using injected MEETING_SERVICE_URL:', window.MEETING_SERVICE_URL);
         return window.MEETING_SERVICE_URL;
     }
 
@@ -15,24 +15,24 @@ const meetingServiceUrl = (() => {
 
     // Local development
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
-        console.log('[JustIX] Detected local development environment');
+        console.log('[LearnX Meets] Detected local development environment');
         return 'http://localhost:2031';
     }
 
     // Docker internal (host.docker.internal)
     if (hostname === 'host.docker.internal') {
-        console.log('[JustIX] Detected Docker internal environment');
+        console.log('[LearnX Meets] Detected Docker internal environment');
         return 'http://host.docker.internal:2031';
     }
 
     // Production: Same domain, different port
     const protocol = window.location.protocol;
     const productionUrl = `${protocol}//${hostname.replace('meet.', '')}`;
-    console.log('[JustIX] Detected production environment:', productionUrl);
+    console.log('[LearnX Meets] Detected production environment:', productionUrl);
     return productionUrl;
 })();
 
-console.log('[JustIX] Meeting Service URL:', meetingServiceUrl);
+console.log('[LearnX Meets] Meeting Service URL:', meetingServiceUrl);
 
 // Force HTTP for local development (override generated config.js)
 // This fixes the "You have been disconnected" error when DISABLE_HTTPS=1
@@ -53,7 +53,7 @@ window.applyRoomConfiguration = function(roomConfig) {
     // Meeting title - display in UI instead of room name
     if (roomConfig.meetingTitle) {
         config.subject = roomConfig.meetingTitle;
-        console.log('[JustIX] Meeting title set:', roomConfig.meetingTitle);
+        console.log('[LearnX Meets] Meeting title set:', roomConfig.meetingTitle);
     }
 
     // Recording settings
@@ -135,7 +135,7 @@ window.applyRoomConfiguration = function(roomConfig) {
         config.liveStreaming.enabled = roomConfig.livestreamingEnabled;
     }
 
-    console.log('[JustIX] Room configuration applied:', roomConfig);
+    console.log('[LearnX Meets] Room configuration applied:', roomConfig);
 };
 
 // Listen for room config from parent window or API
@@ -188,7 +188,7 @@ config.transcription = {
 // Custom branding
 config.defaultLocalDisplayName = 'Me';
 config.defaultRemoteDisplayName = 'Participant';
-config.defaultLogoUrl = 'images/learnx-watermark.svg';
+config.defaultLogoUrl = 'images/justix-watermark.svg';
 
 // Toolbar buttons - hide unnecessary features
 config.toolbarButtons = [
