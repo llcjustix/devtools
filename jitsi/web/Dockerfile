@@ -12,9 +12,9 @@ COPY custom-config.js /usr/share/jitsi-meet/custom-config.js
 COPY custom-styles.css /usr/share/jitsi-meet/css/custom-styles.css
 
 # Copy LearnX Meets logos and icons
-COPY images/justix-logo.svg /usr/share/jitsi-meet/images/justix-logo.svg
-COPY images/justix-icon.svg /usr/share/jitsi-meet/images/justix-icon.svg
-COPY images/justix-watermark.svg /usr/share/jitsi-meet/images/justix-watermark.svg
+COPY images/learnx-logo.svg /usr/share/jitsi-meet/images/learnx-logo.svg
+COPY images/learnx-icon.svg /usr/share/jitsi-meet/images/learnx-icon.svg
+COPY images/learnx-watermark.svg /usr/share/jitsi-meet/images/learnx-watermark.svg
 
 # Copy custom branding files
 COPY title.html /usr/share/jitsi-meet/title.html
@@ -61,9 +61,9 @@ RUN chmod 644 /usr/share/jitsi-meet/custom-config.js && \
     chmod 644 /usr/share/jitsi-meet/welcome.html && \
     chmod 644 /usr/share/jitsi-meet/index.html && \
     chmod 644 /usr/share/jitsi-meet/css/custom-styles.css && \
-    chmod 644 /usr/share/jitsi-meet/images/justix-logo.svg && \
-    chmod 644 /usr/share/jitsi-meet/images/justix-icon.svg && \
-    chmod 644 /usr/share/jitsi-meet/images/justix-watermark.svg && \
+    chmod 644 /usr/share/jitsi-meet/images/learnx-logo.svg && \
+    chmod 644 /usr/share/jitsi-meet/images/learnx-icon.svg && \
+    chmod 644 /usr/share/jitsi-meet/images/learnx-watermark.svg && \
     chmod 644 /usr/share/jitsi-meet/title.html && \
     chmod 644 /usr/share/jitsi-meet/manifest.json && \
     chmod 644 /usr/share/jitsi-meet/validate-room.lua

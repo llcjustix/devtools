@@ -4,27 +4,117 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign in - LearnX Meets</title>
-    <link rel="icon" href="images/justix-icon.svg">
+    <link rel="icon" href="images/learnx-icon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: #7c3aed;
+            --primary-light: #9b6dff;
+            --bg-start: #faf8ff;
+            --bg-end: #f5f0ff;
+        }
+
+        @keyframes gradientFlow {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        @keyframes cardEntrance {
+            from { opacity: 0; transform: scale(0.92) translateY(24px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 50%, 90% { transform: translateX(-4px); }
+            30%, 70% { transform: translateX(4px); }
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-12px); max-height: 0; margin-bottom: 0; padding: 0 14px; }
+            to { opacity: 1; transform: translateY(0); max-height: 80px; margin-bottom: 18px; padding: 12px 14px; }
+        }
+
+        @keyframes slideInTop {
+            from { opacity: 0; transform: translateY(-16px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -200% center; }
+            100% { background-position: 200% center; }
+        }
+
+        @keyframes textFade {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+
+        @keyframes checkDraw {
+            from { stroke-dashoffset: 24; }
+            to { stroke-dashoffset: 0; }
+        }
+
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+
+        @keyframes float1 {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        @keyframes float2 {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
+
+        @keyframes float3 {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(3deg); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.7; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.08); }
+        }
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #faf8ff;
+            background: linear-gradient(135deg, var(--bg-start), var(--bg-end), var(--bg-start), var(--bg-end));
+            background-size: 400% 400%;
+            animation: gradientFlow 12s ease infinite;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+            transition: opacity 0.5s ease;
+        }
+
+        body.fade-out {
+            animation: fadeOut 0.4s ease forwards;
         }
 
         /* Navbar */
         .navbar {
             display: flex;
             align-items: center;
+            justify-content: space-between;
             padding: 16px 32px;
-            background: white;
-            border-bottom: 1px solid #f0ecf9;
+            background: rgba(255,255,255,0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(124,58,237,0.06);
+            position: relative;
+            z-index: 10;
         }
         .navbar a {
             display: flex;
@@ -32,8 +122,15 @@
             text-decoration: none;
         }
         .navbar img { height: 30px; }
+        .navbar-back {
+            font-size: 13px;
+            color: #9ca3af;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .navbar-back:hover { color: var(--primary); }
 
-        /* Main */
+        /* Layout */
         .main {
             flex: 1;
             display: flex;
@@ -42,26 +139,99 @@
             padding: 40px 24px;
         }
 
-        .login-card {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 4px 32px rgba(124, 58, 237, 0.06);
-            padding: 48px 40px;
-            max-width: 420px;
+        .login-container {
+            display: flex;
+            max-width: 960px;
             width: 100%;
-            border: 1px solid #f0ecf9;
+            animation: cardEntrance 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0;
         }
 
-        .login-header {
+        /* Left illustration panel */
+        .illustration-panel {
+            flex: 1;
+            background: linear-gradient(135deg, #7c3aed, #9b6dff);
+            border-radius: 24px 0 0 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 48px 32px;
+            position: relative;
+            overflow: hidden;
+            min-height: 560px;
+        }
+
+        .illustration-panel::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.12) 0%, transparent 60%),
+                        radial-gradient(circle at 70% 80%, rgba(255,255,255,0.08) 0%, transparent 50%);
+        }
+
+        .illustration-panel h2 {
+            color: white;
+            font-size: 26px;
+            font-weight: 700;
             text-align: center;
             margin-bottom: 8px;
+            position: relative;
+            z-index: 1;
         }
+
+        .illustration-panel p {
+            color: rgba(255,255,255,0.8);
+            font-size: 14px;
+            text-align: center;
+            margin-bottom: 36px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .illustration-svg {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 320px;
+        }
+
+        /* Right login panel */
+        .login-panel {
+            flex: 1;
+            background: white;
+            border-radius: 0 24px 24px 0;
+            padding: 48px 44px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            border: 1px solid rgba(124,58,237,0.06);
+            border-left: none;
+            box-shadow: 0 8px 48px rgba(124,58,237,0.08), 0 2px 12px rgba(124,58,237,0.04);
+            position: relative;
+        }
+
+        .login-panel::before {
+            content: '';
+            position: absolute;
+            inset: -1px;
+            border-radius: 0 24px 24px 0;
+            padding: 1px;
+            background: linear-gradient(135deg, rgba(124,58,237,0.08), rgba(155,109,255,0.04), transparent);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+        }
+
+        .login-header { text-align: center; margin-bottom: 8px; }
 
         .login-header h1 {
             font-size: 24px;
-            font-weight: 600;
+            font-weight: 700;
             color: #1f1f1f;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
 
         .login-header p {
@@ -69,94 +239,193 @@
             color: #9ca3af;
         }
 
-        /* Meeting info badge */
+        /* Meeting badge */
         .meeting-badge {
-            display: flex;
+            display: none;
             align-items: center;
-            gap: 10px;
-            background: #f5f0ff;
-            border-radius: 12px;
-            padding: 12px 16px;
-            margin: 24px 0;
+            gap: 12px;
+            background: linear-gradient(135deg, #f5f0ff, #ede5ff);
+            border-radius: 14px;
+            padding: 14px 16px;
+            margin: 20px 0 6px;
+            animation: slideInTop 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.4s both;
         }
+        .meeting-badge.visible { display: flex; }
         .meeting-badge-icon {
-            width: 36px;
-            height: 36px;
-            border-radius: 10px;
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
             background: linear-gradient(135deg, #9b6dff, #7c3aed);
             display: flex;
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
+            box-shadow: 0 4px 12px rgba(124,58,237,0.25);
         }
         .meeting-badge-icon svg { width: 18px; height: 18px; }
         .meeting-badge-text h3 {
             font-size: 14px;
-            font-weight: 500;
+            font-weight: 600;
             color: #1f1f1f;
         }
         .meeting-badge-text p {
             font-size: 12px;
-            color: #9ca3af;
+            color: #7c3aed;
             margin-top: 2px;
+            font-weight: 500;
         }
 
         /* Form */
         .form-group {
-            margin-bottom: 18px;
+            margin-bottom: 20px;
+            position: relative;
         }
 
-        label {
-            display: block;
-            font-size: 13px;
-            font-weight: 500;
-            color: #4b5563;
-            margin-bottom: 6px;
-        }
-
-        input {
+        .form-group input {
             width: 100%;
-            padding: 12px 16px;
+            padding: 16px 16px 8px;
             border: 1.5px solid #e5e7eb;
-            border-radius: 12px;
+            border-radius: 14px;
             font-size: 14px;
             font-family: inherit;
-            transition: border-color 0.2s, box-shadow 0.2s;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
             background: #faf8ff;
-        }
-        input:focus {
+            color: #1f1f1f;
             outline: none;
-            border-color: #7c3aed;
-            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+        }
+
+        .form-group input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.1), 0 0 0 1px rgba(124, 58, 237, 0.2);
             background: white;
         }
 
+        .form-group label {
+            position: absolute;
+            left: 17px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 14px;
+            font-weight: 400;
+            color: #9ca3af;
+            pointer-events: none;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            background: transparent;
+            padding: 0 4px;
+        }
+
+        .form-group input:focus ~ label,
+        .form-group input.has-value ~ label {
+            top: 0;
+            transform: translateY(-50%);
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--primary);
+            background: white;
+            letter-spacing: 0.03em;
+        }
+
+        .form-group input:not(:focus).has-value ~ label {
+            color: #6b7280;
+        }
+
+        /* Password toggle */
+        .password-wrapper {
+            position: relative;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+            color: #9ca3af;
+            transition: color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .password-toggle:hover { color: var(--primary); }
+        .password-toggle svg { width: 20px; height: 20px; }
+
+        .password-wrapper input {
+            padding-right: 48px;
+        }
+
+        /* Forgot password */
+        .forgot-link {
+            display: block;
+            text-align: right;
+            font-size: 12px;
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+            margin-top: -12px;
+            margin-bottom: 20px;
+            transition: color 0.2s;
+        }
+        .forgot-link:hover { color: #6d28d9; text-decoration: underline; }
+
+        /* Submit button */
         .login-btn {
             width: 100%;
-            padding: 13px;
+            padding: 14px;
             background: linear-gradient(135deg, #9b6dff, #7c3aed);
             color: white;
             border: none;
-            border-radius: 12px;
+            border-radius: 14px;
             font-size: 15px;
-            font-weight: 500;
+            font-weight: 600;
             font-family: inherit;
             cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            margin-top: 4px;
+            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            letter-spacing: 0.02em;
         }
+
+        .login-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                90deg,
+                transparent 0%,
+                rgba(255,255,255,0.15) 40%,
+                rgba(255,255,255,0.3) 50%,
+                rgba(255,255,255,0.15) 60%,
+                transparent 100%
+            );
+            background-size: 200% 100%;
+            animation: shimmer 3s ease infinite;
+        }
+
         .login-btn:hover {
-            box-shadow: 0 4px 20px rgba(124, 58, 237, 0.35);
-            transform: translateY(-1px);
+            box-shadow: 0 6px 28px rgba(124, 58, 237, 0.4);
+            transform: translateY(-2px);
         }
-        .login-btn:active { transform: translateY(0); }
+
+        .login-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 12px rgba(124, 58, 237, 0.3);
+        }
+
         .login-btn:disabled {
             background: #d1d5db;
             cursor: not-allowed;
             transform: none;
             box-shadow: none;
         }
+        .login-btn:disabled::before { display: none; }
 
+        /* Error message */
         .error-message {
             background: #fef2f2;
             border: 1px solid #fecaca;
@@ -165,46 +434,147 @@
             border-radius: 12px;
             margin-bottom: 18px;
             font-size: 13px;
+            font-weight: 500;
+            display: none;
+            overflow: hidden;
+        }
+
+        .error-message.visible {
+            display: block;
+            animation: slideDown 0.35s ease forwards, shake 0.5s ease 0.05s;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 32px 24px;
             display: none;
         }
 
-        .loading {
-            text-align: center;
-            padding: 24px;
-            display: none;
-        }
         .spinner {
             border: 3px solid #f0ecf9;
-            border-top: 3px solid #7c3aed;
+            border-top: 3px solid var(--primary);
             border-radius: 50%;
-            width: 36px;
-            height: 36px;
+            width: 40px;
+            height: 40px;
             animation: spin 0.8s linear infinite;
             margin: 0 auto;
         }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
+
         .loading p {
-            margin-top: 12px;
-            color: #9ca3af;
-            font-size: 14px;
-        }
-
-        .help-text {
-            text-align: center;
-            color: #9ca3af;
-            font-size: 12px;
-            margin-top: 20px;
-        }
-        .help-text a {
+            margin-top: 16px;
             color: #7c3aed;
-            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            animation: textFade 2s ease infinite;
         }
-        .help-text a:hover { text-decoration: underline; }
 
-        @media (max-width: 480px) {
-            .login-card { padding: 32px 24px; }
+        /* Success checkmark */
+        .success-state {
+            text-align: center;
+            padding: 32px 24px;
+            display: none;
+        }
+
+        .success-check {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #9b6dff, #7c3aed);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+            box-shadow: 0 8px 24px rgba(124,58,237,0.3);
+        }
+
+        .success-check svg {
+            width: 28px;
+            height: 28px;
+            stroke: white;
+            stroke-width: 2.5;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-dasharray: 24;
+            animation: checkDraw 0.5s ease forwards;
+        }
+
+        .success-state p {
+            color: #7c3aed;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        /* Footer links */
+        .help-section {
+            margin-top: 28px;
+            text-align: center;
+        }
+
+        .help-section .contact-text {
+            font-size: 13px;
+            color: #9ca3af;
+            margin-bottom: 12px;
+        }
+
+        .help-section .contact-text strong {
+            color: #6b7280;
+            font-weight: 500;
+        }
+
+        .help-section .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .help-section .back-link:hover {
+            color: #6d28d9;
+            gap: 8px;
+        }
+
+        .help-section .back-link svg {
+            width: 14px;
+            height: 14px;
+            transition: transform 0.2s;
+        }
+
+        .help-section .back-link:hover svg {
+            transform: translateX(-2px);
+        }
+
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            .illustration-panel { display: none; }
+
+            .login-container {
+                max-width: 440px;
+            }
+
+            .login-panel {
+                border-radius: 24px;
+                border: 1px solid rgba(124,58,237,0.06);
+                padding: 40px 28px;
+                box-shadow: 0 8px 48px rgba(124,58,237,0.08);
+            }
+
+            .login-panel::before {
+                border-radius: 24px;
+            }
+
+            .main {
+                padding: 24px 16px;
+            }
+        }
+
+        @media (max-width: 380px) {
+            .login-panel { padding: 32px 20px; }
             .navbar { padding: 12px 16px; }
         }
     </style>
@@ -212,67 +582,159 @@
 <body>
     <nav class="navbar">
         <a href="/">
-            <img src="images/justix-logo.svg" alt="LearnX Meets">
+            <img src="images/learnx-logo.svg" alt="LearnX Meets">
         </a>
+        <a href="https://learnx.uz" class="navbar-back">Back to LearnX</a>
     </nav>
 
     <div class="main">
-        <div class="login-card">
-            <div class="login-header">
-                <h1>Sign in to join</h1>
-                <p>Enter your credentials to access this meeting</p>
+        <div class="login-container">
+            <!-- Left: Illustration -->
+            <div class="illustration-panel">
+                <h2>LearnX Meets</h2>
+                <p>Secure video conferencing for your academy</p>
+                <svg class="illustration-svg" viewBox="0 0 320 280" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Video grid tiles -->
+                    <rect x="20" y="40" width="130" height="95" rx="16" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.3)" stroke-width="1.5">
+                        <animateTransform attributeName="transform" type="translate" values="0,0;0,-6;0,0" dur="4s" repeatCount="indefinite"/>
+                    </rect>
+                    <rect x="170" y="40" width="130" height="95" rx="16" fill="rgba(255,255,255,0.12)" stroke="rgba(255,255,255,0.25)" stroke-width="1.5">
+                        <animateTransform attributeName="transform" type="translate" values="0,0;0,-5;0,0" dur="4.5s" repeatCount="indefinite"/>
+                    </rect>
+                    <rect x="20" y="150" width="130" height="95" rx="16" fill="rgba(255,255,255,0.12)" stroke="rgba(255,255,255,0.25)" stroke-width="1.5">
+                        <animateTransform attributeName="transform" type="translate" values="0,0;0,-5;0,0" dur="5s" repeatCount="indefinite"/>
+                    </rect>
+                    <rect x="170" y="150" width="130" height="95" rx="16" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.3)" stroke-width="1.5">
+                        <animateTransform attributeName="transform" type="translate" values="0,0;0,-7;0,0" dur="3.8s" repeatCount="indefinite"/>
+                    </rect>
+
+                    <!-- Person silhouettes in tiles -->
+                    <circle cx="85" cy="75" r="14" fill="rgba(255,255,255,0.25)">
+                        <animateTransform attributeName="transform" type="translate" values="0,0;0,-6;0,0" dur="4s" repeatCount="indefinite"/>
+                    </circle>
+                    <rect x="67" y="95" width="36" height="24" rx="10" fill="rgba(255,255,255,0.18)">
+                        <animateTransform attributeName="transform" type="translate" values="0,0;0,-6;0,0" dur="4s" repeatCount="indefinite"/>
+                    </rect>
+
+                    <circle cx="235" cy="75" r="14" fill="rgba(255,255,255,0.2)">
+                        <animateTransform attributeName="transform" type="translate" values="0,0;0,-5;0,0" dur="4.5s" repeatCount="indefinite"/>
+                    </circle>
+                    <rect x="217" y="95" width="36" height="24" rx="10" fill="rgba(255,255,255,0.14)">
+                        <animateTransform attributeName="transform" type="translate" values="0,0;0,-5;0,0" dur="4.5s" repeatCount="indefinite"/>
+                    </rect>
+
+                    <circle cx="85" cy="185" r="14" fill="rgba(255,255,255,0.2)">
+                        <animateTransform attributeName="transform" type="translate" values="0,0;0,-5;0,0" dur="5s" repeatCount="indefinite"/>
+                    </circle>
+                    <rect x="67" y="205" width="36" height="24" rx="10" fill="rgba(255,255,255,0.14)">
+                        <animateTransform attributeName="transform" type="translate" values="0,0;0,-5;0,0" dur="5s" repeatCount="indefinite"/>
+                    </rect>
+
+                    <circle cx="235" cy="185" r="14" fill="rgba(255,255,255,0.25)">
+                        <animateTransform attributeName="transform" type="translate" values="0,0;0,-7;0,0" dur="3.8s" repeatCount="indefinite"/>
+                    </circle>
+                    <rect x="217" y="205" width="36" height="24" rx="10" fill="rgba(255,255,255,0.18)">
+                        <animateTransform attributeName="transform" type="translate" values="0,0;0,-7;0,0" dur="3.8s" repeatCount="indefinite"/>
+                    </rect>
+
+                    <!-- Floating camera icon -->
+                    <g style="animation: pulse 3s ease infinite">
+                        <circle cx="32" cy="22" r="16" fill="rgba(255,255,255,0.15)"/>
+                        <path d="M38 22l-5-3v6l5-3zM26 19h7v6h-7z" fill="rgba(255,255,255,0.6)"/>
+                    </g>
+
+                    <!-- Floating mic icon -->
+                    <g style="animation: pulse 3.5s ease 0.5s infinite">
+                        <circle cx="290" cy="26" r="14" fill="rgba(255,255,255,0.12)"/>
+                        <rect x="286" y="18" width="8" height="12" rx="4" fill="rgba(255,255,255,0.5)"/>
+                        <path d="M284 27c0 4 3 6 6 6s6-2 6-6" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" fill="none"/>
+                        <line x1="290" y1="33" x2="290" y2="36" stroke="rgba(255,255,255,0.5)" stroke-width="1.5"/>
+                    </g>
+
+                    <!-- Floating chat bubble -->
+                    <g style="animation: pulse 4s ease 1s infinite">
+                        <rect x="280" y="258" width="30" height="20" rx="8" fill="rgba(255,255,255,0.15)"/>
+                        <circle cx="289" cy="268" r="1.5" fill="rgba(255,255,255,0.5)"/>
+                        <circle cx="295" cy="268" r="1.5" fill="rgba(255,255,255,0.5)"/>
+                        <circle cx="301" cy="268" r="1.5" fill="rgba(255,255,255,0.5)"/>
+                    </g>
+
+                    <!-- Floating shield/lock icon -->
+                    <g style="animation: pulse 3.2s ease 0.8s infinite">
+                        <circle cx="18" cy="262" r="14" fill="rgba(255,255,255,0.12)"/>
+                        <path d="M18 254l-6 3v6c0 4 3 7 6 8 3-1 6-4 6-8v-6l-6-3z" fill="rgba(255,255,255,0.3)" stroke="rgba(255,255,255,0.5)" stroke-width="1"/>
+                    </g>
+                </svg>
             </div>
 
-            <div class="meeting-badge" id="meetingInfo">
-                <div class="meeting-badge-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
-                </div>
-                <div class="meeting-badge-text">
-                    <h3 id="meetingTitle">Loading...</h3>
-                    <p id="meetingRoom"></p>
-                </div>
-            </div>
-
-            <div class="error-message" id="errorMessage"></div>
-
-            <form id="loginForm">
-                <div class="form-group">
-                    <label for="email">Email</label>
-                    <input type="email" id="email" name="email" required
-                           placeholder="you@example.com" autocomplete="email">
+            <!-- Right: Login form -->
+            <div class="login-panel">
+                <div class="login-header">
+                    <h1 id="loginTitle">Sign in to continue</h1>
+                    <p id="loginSubtitle">Enter your credentials to access LearnX Meets</p>
                 </div>
 
-                <div class="form-group">
-                    <label for="password">Password</label>
-                    <input type="password" id="password" name="password" required
-                           placeholder="Enter your password" autocomplete="current-password">
+                <div class="meeting-badge" id="meetingInfo">
+                    <div class="meeting-badge-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+                    </div>
+                    <div class="meeting-badge-text">
+                        <h3 id="meetingTitle">Loading...</h3>
+                        <p id="meetingRoom"></p>
+                    </div>
                 </div>
 
-                <button type="submit" class="login-btn" id="loginBtn">
-                    Join Meeting
-                </button>
-            </form>
+                <div class="error-message" id="errorMessage"></div>
 
-            <div class="loading" id="loading">
-                <div class="spinner"></div>
-                <p>Signing in...</p>
-            </div>
+                <form id="loginForm" autocomplete="on">
+                    <div class="form-group">
+                        <input type="email" id="email" name="email" required autocomplete="email">
+                        <label for="email">Email address</label>
+                    </div>
 
-            <div class="help-text">
-                <a href="https://learnx.uz">Back to LearnX</a>
+                    <div class="form-group">
+                        <div class="password-wrapper">
+                            <input type="password" id="password" name="password" required autocomplete="current-password">
+                            <label for="password">Password</label>
+                            <button type="button" class="password-toggle" id="passwordToggle" tabindex="-1" aria-label="Toggle password visibility">
+                                <svg id="eyeOpen" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                <svg id="eyeClosed" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <a href="https://learnx.uz/forgot-password" class="forgot-link">Forgot password?</a>
+
+                    <button type="submit" class="login-btn" id="loginBtn">
+                        Sign In
+                    </button>
+                </form>
+
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Signing in...</p>
+                </div>
+
+                <div class="success-state" id="successState">
+                    <div class="success-check">
+                        <svg viewBox="0 0 24 24"><polyline points="6 12 10 16 18 8"/></svg>
+                    </div>
+                    <p>Welcome! Redirecting...</p>
+                </div>
+
+                <div class="help-section">
+                    <p class="contact-text">Don't have an account? <strong>Contact your administrator</strong></p>
+                    <a href="https://learnx.uz" class="back-link">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+                        Back to LearnX
+                    </a>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        // Service URL detection
-        const getMeetingServiceUrl = () => {
-            if (window.MEETING_SERVICE_URL) return window.MEETING_SERVICE_URL;
-            const h = window.location.hostname;
-            if (h === 'localhost' || h === '127.0.0.1') return 'http://localhost:2031';
-            if (h === 'host.docker.internal') return 'http://host.docker.internal:2031';
-            return window.location.protocol + '//' + h.replace('meet.', '');
-        };
+        // ── Service URL detection ──
         const getAuthServiceUrl = () => {
             if (window.AUTH_SERVICE_URL) return window.AUTH_SERVICE_URL;
             const h = window.location.hostname;
@@ -281,67 +743,93 @@
             return window.location.protocol + '//' + h.replace('meet.', '');
         };
 
-        const meetingServiceUrl = getMeetingServiceUrl();
-        const authServiceUrl = getAuthServiceUrl();
+        const getMeetingServiceUrl = () => {
+            if (window.MEETING_SERVICE_URL) return window.MEETING_SERVICE_URL;
+            const h = window.location.hostname;
+            if (h === 'localhost' || h === '127.0.0.1') return 'http://localhost:2031';
+            if (h === 'host.docker.internal') return 'http://host.docker.internal:2031';
+            return window.location.protocol + '//' + h.replace('meet.', '');
+        };
 
-        // Extract room name from URL parameters
+        const authServiceUrl = getAuthServiceUrl();
+        const meetingServiceUrl = getMeetingServiceUrl();
+
+        // ── URL parameters ──
         const urlParams = new URLSearchParams(window.location.search);
         const roomName = urlParams.get('room');
         const returnUrl = urlParams.get('returnUrl');
 
-        // Check if user already has a valid token
-        const existingToken = sessionStorage.getItem('jitsi_jwt_token') || localStorage.getItem('jitsi_jwt_token');
+        const getRedirectUrl = () => returnUrl || (roomName ? (window.location.origin + '/' + roomName) : '/welcome.html');
+
+        // ── Token check ──
+        const existingToken = sessionStorage.getItem('learnx_access_token') || localStorage.getItem('learnx_access_token');
         if (existingToken) {
             try {
                 const base64 = existingToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
                 const payload = JSON.parse(atob(base64));
                 if (payload.exp && (payload.exp * 1000) > Date.now()) {
-                    // Token still valid — redirect immediately
-                    const dest = returnUrl || (roomName ? (window.location.origin + '/' + roomName) : '/welcome.html');
-                    window.location.href = dest;
+                    window.location.href = getRedirectUrl();
                 } else {
-                    // Expired — clear all tokens
-                    sessionStorage.removeItem('jitsi_jwt_token');
-                    localStorage.removeItem('jitsi_jwt_token');
-                    sessionStorage.removeItem('jitsi_refresh_token');
-                    localStorage.removeItem('jitsi_refresh_token');
+                    sessionStorage.removeItem('learnx_access_token');
+                    localStorage.removeItem('learnx_access_token');
+                    sessionStorage.removeItem('learnx_refresh_token');
+                    localStorage.removeItem('learnx_refresh_token');
                 }
             } catch (e) { /* invalid token, let user login */ }
         }
 
-        // Load meeting info
+        // ── Meeting info loading ──
+        const meetingBadge = document.getElementById('meetingInfo');
         if (roomName) {
+            meetingBadge.classList.add('visible');
             document.getElementById('meetingTitle').textContent = 'Loading...';
             document.getElementById('meetingRoom').textContent = 'Room: ' + roomName;
+            document.getElementById('loginTitle').textContent = 'Sign in to join';
+            document.getElementById('loginSubtitle').textContent = 'Enter your credentials to access this meeting';
+            document.getElementById('loginBtn').textContent = 'Join Meeting';
+
             fetch(meetingServiceUrl + '/meetings/by-room/' + roomName)
-                .then(function(res) {
-                    if (res.ok) return res.json();
-                    throw new Error('not found');
-                })
-                .then(function(meeting) {
-                    document.getElementById('meetingTitle').textContent = meeting.title || 'Private Meeting';
-                })
-                .catch(function() {
-                    document.getElementById('meetingTitle').textContent = 'Private Meeting';
-                });
-        } else {
-            document.getElementById('meetingTitle').textContent = 'LearnX Meets';
-            document.getElementById('meetingRoom').textContent = 'Sign in to access meetings';
-            document.getElementById('loginBtn').textContent = 'Sign In';
+                .then(res => { if (res.ok) return res.json(); throw new Error('not found'); })
+                .then(meeting => { document.getElementById('meetingTitle').textContent = meeting.title || 'Private Meeting'; })
+                .catch(() => { document.getElementById('meetingTitle').textContent = 'Private Meeting'; });
         }
 
-        // Handle form submission
+        // ── Floating label logic ──
+        document.querySelectorAll('.form-group input').forEach(input => {
+            const update = () => input.classList.toggle('has-value', input.value.length > 0);
+            input.addEventListener('input', update);
+            input.addEventListener('change', update);
+            update();
+        });
+
+        // ── Password visibility toggle ──
+        const passwordInput = document.getElementById('password');
+        const toggleBtn = document.getElementById('passwordToggle');
+        const eyeOpen = document.getElementById('eyeOpen');
+        const eyeClosed = document.getElementById('eyeClosed');
+
+        toggleBtn.addEventListener('click', () => {
+            const isPassword = passwordInput.type === 'password';
+            passwordInput.type = isPassword ? 'text' : 'password';
+            eyeOpen.style.display = isPassword ? 'none' : 'block';
+            eyeClosed.style.display = isPassword ? 'block' : 'none';
+        });
+
+        // ── Form submission ──
         document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
 
             const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
+            const password = passwordInput.value;
             const errorDiv = document.getElementById('errorMessage');
             const loginForm = document.getElementById('loginForm');
             const loading = document.getElementById('loading');
+            const successState = document.getElementById('successState');
 
             errorDiv.style.display = 'none';
+            errorDiv.classList.remove('visible');
             loginForm.style.display = 'none';
+            document.querySelector('.forgot-link').style.display = 'none';
             loading.style.display = 'block';
 
             try {
@@ -353,41 +841,47 @@
 
                 if (response.ok) {
                     const data = await response.json();
-                    const jwtToken = data.access_token || data.token;
+                    const accessToken = data.access_token;
 
-                    if (!jwtToken) {
+                    if (!accessToken) {
                         throw new Error('No token received from authentication service');
                     }
 
-                    // Store tokens in both storages for persistence
-                    sessionStorage.setItem('jitsi_jwt_token', jwtToken);
-                    localStorage.setItem('jitsi_jwt_token', jwtToken);
+                    // Store tokens in both storages
+                    sessionStorage.setItem('learnx_access_token', accessToken);
+                    localStorage.setItem('learnx_access_token', accessToken);
 
-                    // Store refresh token if available
                     if (data.refresh_token) {
-                        sessionStorage.setItem('jitsi_refresh_token', data.refresh_token);
-                        localStorage.setItem('jitsi_refresh_token', data.refresh_token);
+                        sessionStorage.setItem('learnx_refresh_token', data.refresh_token);
+                        localStorage.setItem('learnx_refresh_token', data.refresh_token);
                     }
 
-                    // Redirect to meeting room or welcome page
-                    const dest = returnUrl || (roomName ? (window.location.origin + '/' + roomName) : '/welcome.html');
-                    window.location.href = dest;
+                    // Show success animation
+                    loading.style.display = 'none';
+                    successState.style.display = 'block';
+
+                    // Fade out and redirect
+                    setTimeout(() => {
+                        document.body.classList.add('fade-out');
+                        setTimeout(() => { window.location.href = getRedirectUrl(); }, 400);
+                    }, 800);
                 } else {
                     const errorText = await response.text();
-                    let msg = 'Authentication failed';
+                    let msg = 'Invalid email or password. Please try again.';
                     try {
                         const errorJson = JSON.parse(errorText);
                         msg = errorJson.message || errorJson.error || msg;
                     } catch (e) {
-                        msg = errorText || msg;
+                        if (errorText) msg = errorText;
                     }
                     throw new Error(msg);
                 }
             } catch (error) {
                 errorDiv.textContent = error.message || 'Authentication failed. Please try again.';
-                errorDiv.style.display = 'block';
+                errorDiv.classList.add('visible');
                 loading.style.display = 'none';
                 loginForm.style.display = 'block';
+                document.querySelector('.forgot-link').style.display = 'block';
             }
         });
     </script>

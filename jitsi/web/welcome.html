@@ -4,11 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LearnX Meets</title>
-    <link rel="icon" href="images/justix-icon.svg">
+    <link rel="icon" href="images/learnx-icon.svg">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html { scroll-behavior: smooth; }
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -18,17 +20,63 @@
             overflow-x: hidden;
         }
 
+        /* ---- Animated background ---- */
+        .bg-shapes {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+        .bg-shape {
+            position: absolute;
+            border-radius: 50%;
+            opacity: 0.06;
+            filter: blur(80px);
+            animation: bgFloat 20s ease-in-out infinite;
+        }
+        .bg-shape:nth-child(1) {
+            width: 600px; height: 600px;
+            background: #7c3aed;
+            top: -200px; right: -100px;
+            animation-delay: 0s;
+        }
+        .bg-shape:nth-child(2) {
+            width: 500px; height: 500px;
+            background: #9b6dff;
+            bottom: -150px; left: -100px;
+            animation-delay: -7s;
+        }
+        .bg-shape:nth-child(3) {
+            width: 350px; height: 350px;
+            background: #c4b5fd;
+            top: 40%; left: 50%;
+            animation-delay: -14s;
+        }
+        @keyframes bgFloat {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(30px, -20px) scale(1.05); }
+            66% { transform: translate(-20px, 15px) scale(0.95); }
+        }
+
         /* ---- Navbar ---- */
         .navbar {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 16px 32px;
-            background: white;
-            border-bottom: 1px solid #f0ecf9;
+            padding: 14px 32px;
+            background: rgba(255,255,255,0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(240,236,249,0.8);
             position: sticky;
             top: 0;
             z-index: 100;
+            animation: slideDown 0.5s ease both;
+        }
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         .navbar-brand {
             display: flex;
@@ -40,12 +88,13 @@
         .navbar-right {
             display: flex;
             align-items: center;
-            gap: 14px;
+            gap: 12px;
         }
         .navbar-time {
-            color: #6b7280;
-            font-size: 14px;
+            color: #9ca3af;
+            font-size: 13px;
             font-weight: 400;
+            padding: 0 8px;
         }
 
         /* ---- Navbar Buttons ---- */
@@ -54,60 +103,200 @@
             align-items: center;
             gap: 8px;
             padding: 10px 20px;
-            border-radius: 20px;
+            border-radius: 12px;
             font-size: 14px;
             font-weight: 500;
             border: none;
             cursor: pointer;
             text-decoration: none;
-            transition: all 0.25s ease;
+            font-family: inherit;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .nav-btn svg { width: 18px; height: 18px; }
         .nav-btn-primary {
             background: linear-gradient(135deg, #9b6dff, #7c3aed);
             color: white;
+            position: relative;
+            overflow: hidden;
         }
-        .nav-btn-primary:hover { box-shadow: 0 4px 16px rgba(124,58,237,0.35); transform: translateY(-1px); }
+        .nav-btn-primary::after {
+            content: '';
+            position: absolute;
+            top: -50%; left: -60%;
+            width: 40%; height: 200%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+            transform: skewX(-20deg);
+            animation: shimmer 3.5s ease-in-out infinite;
+        }
+        .nav-btn-primary:hover { box-shadow: 0 4px 20px rgba(124,58,237,0.4); transform: translateY(-1px); }
         .nav-btn-outline {
             background: white;
             color: #7c3aed;
             border: 1.5px solid #e5ddf5;
         }
-        .nav-btn-outline:hover { background: #f5f0ff; border-color: #c4b5fd; }
+        .nav-btn-outline:hover { background: #f5f0ff; border-color: #c4b5fd; transform: translateY(-1px); }
         .nav-btn-ghost {
             background: transparent;
             color: #6b7280;
+            position: relative;
         }
         .nav-btn-ghost:hover { background: #f5f0ff; color: #7c3aed; }
+
+        /* ---- User Badge & Dropdown ---- */
+        .user-badge-wrap {
+            position: relative;
+            display: none;
+        }
+        .user-badge-wrap.show {
+            display: block;
+            animation: badgeBounce 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+        }
+        @keyframes badgeBounce {
+            from { opacity: 0; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .user-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #374151;
+            background: #f5f0ff;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1.5px solid transparent;
+            user-select: none;
+        }
+        .user-badge:hover { border-color: #e5ddf5; background: #ede5ff; }
+        .user-badge .avatar {
+            width: 28px; height: 28px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #9b6dff, #7c3aed);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .user-dropdown {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            background: white;
+            border-radius: 14px;
+            box-shadow: 0 12px 40px rgba(124,58,237,0.12), 0 0 0 1px rgba(0,0,0,0.04);
+            min-width: 200px;
+            padding: 6px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-8px) scale(0.97);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 200;
+        }
+        .user-dropdown.open {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0) scale(1);
+        }
+        .user-dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 14px;
+            color: #374151;
+            cursor: pointer;
+            transition: background 0.15s;
+            border: none;
+            background: none;
+            width: 100%;
+            font-family: inherit;
+            text-align: left;
+        }
+        .user-dropdown-item:hover { background: #f5f0ff; }
+        .user-dropdown-item.danger { color: #dc2626; }
+        .user-dropdown-item.danger:hover { background: #fef2f2; }
+        .user-dropdown-item svg { width: 18px; height: 18px; flex-shrink: 0; }
+        .dropdown-divider { height: 1px; background: #f0ecf9; margin: 4px 8px; }
+        .dropdown-user-info {
+            padding: 10px 14px;
+            border-bottom: 1px solid #f0ecf9;
+            margin-bottom: 4px;
+        }
+        .dropdown-user-info .name { font-size: 14px; font-weight: 600; color: #1f1f1f; }
+        .dropdown-user-info .email { font-size: 12px; color: #9ca3af; margin-top: 2px; }
+        .dropdown-user-info .role-badge {
+            display: inline-block;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 2px 8px;
+            border-radius: 6px;
+            background: #f3edff;
+            color: #7c3aed;
+            margin-top: 6px;
+        }
+
+        /* ---- Create Meeting Button ---- */
+        .btn-create { display: none; }
+        .btn-create.show { display: inline-flex; }
 
         /* ---- Hero Section ---- */
         .hero {
             display: flex;
             align-items: center;
             justify-content: center;
-            min-height: calc(100vh - 70px);
+            min-height: calc(100vh - 65px);
             padding: 60px 32px;
             gap: 80px;
             max-width: 1200px;
             margin: 0 auto;
+            position: relative;
+            z-index: 1;
         }
 
         .hero-content {
             flex: 1;
-            max-width: 520px;
-            animation: fadeInUp 0.7s ease both;
+            max-width: 540px;
         }
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(24px); }
-            to { opacity: 1; transform: translateY(0); }
+
+        .hero-content .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #f3edff;
+            color: #7c3aed;
+            padding: 8px 16px;
+            border-radius: 100px;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 24px;
+            border: 1px solid #e5ddf5;
+            opacity: 0;
+            animation: fadeInUp 0.6s 0.1s ease forwards;
+        }
+        .hero-content .badge .dot {
+            width: 7px; height: 7px;
+            border-radius: 50%;
+            background: #7c3aed;
+            animation: pulse 2s ease-in-out infinite;
         }
 
         .hero-content h1 {
-            font-size: 44px;
-            font-weight: 600;
-            line-height: 1.2;
+            font-size: 48px;
+            font-weight: 700;
+            line-height: 1.15;
             margin-bottom: 20px;
             color: #1f1f1f;
+            letter-spacing: -0.5px;
+            opacity: 0;
+            animation: fadeInUp 0.6s 0.2s ease forwards;
         }
         .hero-content h1 span {
             background: linear-gradient(135deg, #9b6dff, #7c3aed);
@@ -120,15 +309,24 @@
             font-size: 18px;
             line-height: 1.7;
             color: #6b7280;
-            margin-bottom: 40px;
+            margin-bottom: 36px;
+            opacity: 0;
+            animation: fadeInUp 0.6s 0.3s ease forwards;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(24px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         /* ---- CTA Buttons ---- */
         .cta-group {
             display: flex;
-            gap: 16px;
+            gap: 14px;
             align-items: center;
             flex-wrap: wrap;
+            opacity: 0;
+            animation: fadeInUp 0.6s 0.4s ease forwards;
         }
 
         .btn {
@@ -136,12 +334,13 @@
             align-items: center;
             gap: 10px;
             padding: 14px 28px;
-            border-radius: 24px;
+            border-radius: 14px;
             font-size: 15px;
             font-weight: 500;
             text-decoration: none;
             border: none;
             cursor: pointer;
+            font-family: inherit;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             overflow: hidden;
@@ -153,19 +352,15 @@
             box-shadow: 0 4px 20px rgba(124, 58, 237, 0.3);
         }
         .btn-primary:hover {
-            box-shadow: 0 6px 30px rgba(124, 58, 237, 0.45);
+            box-shadow: 0 8px 32px rgba(124, 58, 237, 0.45);
             transform: translateY(-2px);
         }
         .btn-primary:active { transform: translateY(0); }
-
-        /* Shimmer animation on primary button */
         .btn-primary::after {
             content: '';
             position: absolute;
-            top: -50%;
-            left: -60%;
-            width: 40%;
-            height: 200%;
+            top: -50%; left: -60%;
+            width: 40%; height: 200%;
             background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
             transform: skewX(-20deg);
             animation: shimmer 3s ease-in-out infinite;
@@ -183,21 +378,20 @@
         .btn-secondary:hover {
             background: #f5f0ff;
             border-color: #c4b5fd;
+            transform: translateY(-2px);
         }
 
-        .btn-icon {
-            width: 20px;
-            height: 20px;
-        }
+        .btn-icon { width: 20px; height: 20px; }
 
-        /* ---- Hero Illustration ---- */
+        /* ---- Hero Visual ---- */
         .hero-visual {
             flex: 1;
             max-width: 480px;
             display: flex;
             align-items: center;
             justify-content: center;
-            animation: fadeInUp 0.7s 0.15s ease both;
+            opacity: 0;
+            animation: fadeInUp 0.7s 0.25s ease forwards;
         }
 
         .visual-grid {
@@ -211,42 +405,37 @@
             background: white;
             border-radius: 20px;
             padding: 24px;
-            box-shadow: 0 4px 24px rgba(124, 58, 237, 0.08);
+            box-shadow: 0 4px 24px rgba(124, 58, 237, 0.07);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             gap: 12px;
             aspect-ratio: 1;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.4s ease;
             animation: cardFloat 6s ease-in-out infinite;
+            border: 1px solid rgba(240,236,249,0.6);
         }
         .visual-card:hover {
-            transform: translateY(-6px) scale(1.03);
-            box-shadow: 0 8px 32px rgba(124, 58, 237, 0.15);
+            transform: translateY(calc(var(--card-y, 0px) - 8px)) scale(1.04);
+            box-shadow: 0 12px 40px rgba(124, 58, 237, 0.18), 0 0 0 1px rgba(124,58,237,0.06);
         }
-        .visual-card:nth-child(1) { animation-delay: 0s; }
-        .visual-card:nth-child(2) { animation-delay: 0.5s; transform: translateY(20px); }
-        .visual-card:nth-child(3) { animation-delay: 1s; transform: translateY(-20px); }
-        .visual-card:nth-child(4) { animation-delay: 1.5s; }
-        .visual-card:nth-child(2):hover { transform: translateY(14px) scale(1.03); }
-        .visual-card:nth-child(3):hover { transform: translateY(-26px) scale(1.03); }
+        .visual-card:nth-child(1) { --card-y: 0px; animation-delay: 0s; }
+        .visual-card:nth-child(2) { --card-y: 20px; animation-delay: 0.5s; transform: translateY(20px); }
+        .visual-card:nth-child(3) { --card-y: -20px; animation-delay: 1s; transform: translateY(-20px); }
+        .visual-card:nth-child(4) { --card-y: 0px; animation-delay: 1.5s; }
 
         @keyframes cardFloat {
             0%, 100% { transform: translateY(var(--card-y, 0)); }
             50% { transform: translateY(calc(var(--card-y, 0px) - 10px)); }
         }
-        .visual-card:nth-child(2) { --card-y: 20px; }
-        .visual-card:nth-child(3) { --card-y: -20px; }
 
         .card-icon {
-            width: 48px;
-            height: 48px;
+            width: 48px; height: 48px;
             border-radius: 14px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 22px;
             transition: transform 0.3s ease;
         }
         .visual-card:hover .card-icon { transform: scale(1.12) rotate(-3deg); }
@@ -265,11 +454,12 @@
         /* ---- Features strip ---- */
         .features {
             display: flex;
-            gap: 40px;
+            gap: 32px;
             margin-top: 48px;
-            padding-top: 32px;
+            padding-top: 28px;
             border-top: 1px solid #f0ecf9;
-            animation: fadeInUp 0.7s 0.3s ease both;
+            opacity: 0;
+            animation: fadeInUp 0.6s 0.55s ease forwards;
         }
         .feature-item {
             display: flex;
@@ -279,8 +469,7 @@
             color: #6b7280;
         }
         .feature-dot {
-            width: 8px;
-            height: 8px;
+            width: 8px; height: 8px;
             border-radius: 50%;
             background: #7c3aed;
             animation: pulse 2s ease-in-out infinite;
@@ -289,20 +478,31 @@
         .feature-item:nth-child(3) .feature-dot { animation-delay: 0.8s; }
         @keyframes pulse {
             0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(0.8); }
+            50% { opacity: 0.4; transform: scale(0.75); }
         }
 
-        /* ---- Info banner for non-admin users ---- */
+        /* ---- Info Banner ---- */
         .info-banner {
-            display: none;
+            max-height: 0;
+            overflow: hidden;
+            opacity: 0;
+            transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease, margin 0.4s ease;
             background: linear-gradient(135deg, #f5f0ff 0%, #ede5ff 100%);
             border: 1px solid #ddd6fe;
             border-radius: 16px;
-            padding: 20px 24px;
-            margin-bottom: 32px;
-            animation: fadeInUp 0.5s ease both;
+            margin-bottom: 0;
         }
-        .info-banner.show { display: flex; }
+        .info-banner.show {
+            max-height: 200px;
+            opacity: 1;
+            margin-bottom: 28px;
+            padding: 20px 24px;
+        }
+        .info-banner-inner {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+        }
         .info-banner-icon {
             width: 44px; height: 44px;
             border-radius: 12px;
@@ -311,39 +511,263 @@
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
-            margin-right: 16px;
         }
         .info-banner-text h3 { font-size: 15px; font-weight: 600; color: #1f1f1f; margin-bottom: 4px; }
         .info-banner-text p { font-size: 13px; color: #6b7280; line-height: 1.5; }
 
-        /* ---- Create Meeting Button (navbar) ---- */
-        .btn-create { display: none; }
-        .btn-create.show { display: inline-flex; }
+        /* ---- Management Section ---- */
+        .management-section {
+            display: none;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 32px 60px;
+            position: relative;
+            z-index: 1;
+        }
+        .management-section.show { display: block; }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 28px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #f0ecf9;
+        }
+        .section-header h2 {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1f1f1f;
+        }
+        .section-header .refresh-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border-radius: 10px;
+            border: 1.5px solid #e5ddf5;
+            background: white;
+            color: #6b7280;
+            font-size: 13px;
+            font-weight: 500;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .section-header .refresh-btn:hover { background: #f5f0ff; color: #7c3aed; border-color: #c4b5fd; }
+        .section-header .refresh-btn svg { width: 16px; height: 16px; }
+
+        /* Stats Strip */
+        .stats-strip {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+        .stat-card {
+            background: white;
+            border-radius: 16px;
+            padding: 22px 24px;
+            border: 1px solid #f0ecf9;
+            box-shadow: 0 2px 12px rgba(124,58,237,0.04);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 28px rgba(124,58,237,0.1);
+        }
+        .stat-label {
+            font-size: 13px;
+            font-weight: 500;
+            color: #9ca3af;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .stat-label svg { width: 16px; height: 16px; }
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #1f1f1f;
+            letter-spacing: -0.5px;
+        }
+        .stat-value.counting {
+            transition: all 0.3s ease;
+        }
+
+        /* Meeting Cards */
+        .meetings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 16px;
+        }
+        .meeting-card {
+            background: white;
+            border-radius: 18px;
+            padding: 24px;
+            border: 1px solid #f0ecf9;
+            box-shadow: 0 2px 12px rgba(124,58,237,0.04);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        .meeting-card.visible {
+            animation: cardEntrance 0.5s ease forwards;
+        }
+        @keyframes cardEntrance {
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .meeting-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 32px rgba(124,58,237,0.1);
+        }
+        .meeting-card-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 14px;
+        }
+        .meeting-card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f1f1f;
+            line-height: 1.3;
+            flex: 1;
+            margin-right: 12px;
+        }
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            padding: 4px 10px;
+            border-radius: 8px;
+            white-space: nowrap;
+        }
+        .status-badge.scheduled { background: #fef3c7; color: #92400e; }
+        .status-badge.in-progress {
+            background: #dcfce7;
+            color: #166534;
+            animation: statusGlow 2s ease-in-out infinite;
+        }
+        @keyframes statusGlow {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(22,163,74,0); }
+            50% { box-shadow: 0 0 12px 2px rgba(22,163,74,0.15); }
+        }
+        .status-badge.in-progress::before {
+            content: '';
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: #16a34a;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        .status-badge.completed { background: #f3f4f6; color: #6b7280; }
+        .status-badge.cancelled { background: #fef2f2; color: #dc2626; }
+
+        .meeting-card-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .meeting-card-meta .meta-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #6b7280;
+        }
+        .meeting-card-meta .meta-row svg { width: 15px; height: 15px; color: #9ca3af; flex-shrink: 0; }
+
+        .meeting-card-actions {
+            display: flex;
+            gap: 8px;
+            padding-top: 14px;
+            border-top: 1px solid #f5f0ff;
+        }
+        .card-action-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+        .card-action-btn svg { width: 15px; height: 15px; }
+        .card-action-btn.primary {
+            background: linear-gradient(135deg, #9b6dff, #7c3aed);
+            color: white;
+        }
+        .card-action-btn.primary:hover { box-shadow: 0 4px 14px rgba(124,58,237,0.3); }
+        .card-action-btn.ghost {
+            background: #f5f0ff;
+            color: #7c3aed;
+        }
+        .card-action-btn.ghost:hover { background: #ede5ff; }
+        .card-action-btn.danger {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+        .card-action-btn.danger:hover { background: #fee2e2; }
+
+        .meetings-empty {
+            text-align: center;
+            padding: 60px 20px;
+            color: #9ca3af;
+        }
+        .meetings-empty svg { width: 48px; height: 48px; margin-bottom: 16px; opacity: 0.4; }
+        .meetings-empty p { font-size: 15px; }
+        .meetings-loading {
+            text-align: center;
+            padding: 40px;
+        }
+        .meetings-loading .spinner {
+            border: 3px solid #f0ecf9;
+            border-top: 3px solid #7c3aed;
+            border-radius: 50%;
+            width: 32px; height: 32px;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 12px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
         /* ---- Modal ---- */
         .modal-backdrop {
             display: none;
             position: fixed;
             inset: 0;
-            background: rgba(0,0,0,0.4);
+            background: rgba(0,0,0,0.35);
             z-index: 1000;
             align-items: center;
             justify-content: center;
-            backdrop-filter: blur(4px);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
         }
         .modal-backdrop.open { display: flex; }
 
         .modal {
             background: white;
-            border-radius: 20px;
+            border-radius: 22px;
             width: 560px;
             max-width: 94vw;
             max-height: 90vh;
             overflow-y: auto;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
-            animation: modalIn 0.25s ease;
+            box-shadow: 0 24px 64px rgba(0,0,0,0.16);
+            animation: modalIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
-        @keyframes modalIn { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: none; } }
+        @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.92) translateY(12px); }
+            to { opacity: 1; transform: none; }
+        }
 
         .modal-header {
             display: flex;
@@ -354,16 +778,16 @@
         .modal-header h2 { font-size: 20px; font-weight: 600; color: #1f1f1f; }
         .modal-close {
             width: 36px; height: 36px;
-            border-radius: 50%;
+            border-radius: 10px;
             border: none;
             background: #f5f0ff;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: background 0.2s;
+            transition: all 0.2s;
         }
-        .modal-close:hover { background: #ede5ff; }
+        .modal-close:hover { background: #ede5ff; transform: rotate(90deg); }
 
         .modal-body { padding: 20px 28px 28px; }
 
@@ -385,12 +809,16 @@
             font-size: 14px;
             font-family: inherit;
             outline: none;
-            transition: border-color 0.2s;
+            transition: border-color 0.2s, box-shadow 0.2s;
             background: #faf8ff;
         }
         .form-group input:focus,
         .form-group select:focus,
-        .form-group textarea:focus { border-color: #7c3aed; }
+        .form-group textarea:focus {
+            border-color: #7c3aed;
+            box-shadow: 0 0 0 3px rgba(124,58,237,0.08);
+            background: white;
+        }
         .form-group textarea { resize: vertical; min-height: 70px; }
 
         .form-row { display: flex; gap: 14px; }
@@ -403,8 +831,7 @@
         }
         .toggle-switch {
             position: relative;
-            width: 44px;
-            height: 24px;
+            width: 44px; height: 24px;
         }
         .toggle-switch input { opacity: 0; width: 0; height: 0; }
         .toggle-slider {
@@ -429,7 +856,7 @@
 
         /* Participants (email chips) */
         .participants-section { display: none; margin-bottom: 18px; }
-        .participants-section.show { display: block; }
+        .participants-section.show { display: block; animation: fadeInUp 0.3s ease; }
         .participants-section label {
             display: block;
             font-size: 13px;
@@ -437,10 +864,7 @@
             color: #374151;
             margin-bottom: 6px;
         }
-        .email-input-wrap {
-            display: flex;
-            gap: 8px;
-        }
+        .email-input-wrap { display: flex; gap: 8px; }
         .email-input-wrap input { flex: 1; }
         .btn-add-email {
             padding: 0 16px;
@@ -450,6 +874,7 @@
             color: white;
             font-size: 13px;
             font-weight: 500;
+            font-family: inherit;
             cursor: pointer;
             white-space: nowrap;
             transition: background 0.2s;
@@ -471,9 +896,9 @@
             padding: 6px 12px;
             font-size: 13px;
             color: #374151;
-            animation: chipIn 0.2s ease;
+            animation: chipIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
-        @keyframes chipIn { from { opacity: 0; transform: scale(0.85); } to { opacity: 1; transform: scale(1); } }
+        @keyframes chipIn { from { opacity: 0; transform: scale(0.7); } to { opacity: 1; transform: scale(1); } }
         .email-chip button {
             background: none;
             border: none;
@@ -494,11 +919,12 @@
         }
         .btn-submit {
             padding: 12px 28px;
-            border-radius: 20px;
+            border-radius: 12px;
             font-size: 14px;
             font-weight: 500;
             border: none;
             cursor: pointer;
+            font-family: inherit;
             transition: all 0.25s;
         }
         .btn-submit.primary {
@@ -513,12 +939,12 @@
         }
         .btn-submit.secondary:hover { background: #ede5ff; }
 
-        /* Success result card */
+        /* Success result */
         .result-card {
             background: #f0fdf4;
             border: 1.5px solid #bbf7d0;
-            border-radius: 14px;
-            padding: 20px;
+            border-radius: 16px;
+            padding: 24px;
             text-align: center;
             animation: fadeInUp 0.3s ease;
         }
@@ -550,27 +976,39 @@
             color: white;
             font-size: 12px;
             font-weight: 500;
+            font-family: inherit;
             cursor: pointer;
             transition: background 0.2s;
         }
         .btn-copy:hover { background: #6d28d9; }
 
         /* ---- Toast ---- */
-        .toast {
+        .toast-container {
             position: fixed;
             bottom: 24px;
             right: 24px;
+            z-index: 3000;
+            display: flex;
+            flex-direction: column-reverse;
+            gap: 8px;
+        }
+        .toast {
             background: #1f1f1f;
             color: white;
             padding: 14px 20px;
-            border-radius: 12px;
+            border-radius: 14px;
             font-size: 14px;
-            z-index: 2000;
-            animation: toastIn 0.3s ease, toastOut 0.3s 2.7s ease forwards;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+            font-family: inherit;
+            box-shadow: 0 8px 28px rgba(0,0,0,0.2);
+            animation: toastIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), toastOut 0.3s 2.7s ease forwards;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
-        @keyframes toastIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes toastOut { to { opacity: 0; transform: translateY(16px); } }
+        .toast.success { background: #166534; }
+        .toast.error { background: #dc2626; }
+        @keyframes toastIn { from { opacity: 0; transform: translateX(40px) scale(0.95); } to { opacity: 1; transform: translateX(0) scale(1); } }
+        @keyframes toastOut { to { opacity: 0; transform: translateX(40px) scale(0.95); } }
 
         /* ---- Responsive ---- */
         @media (max-width: 900px) {
@@ -579,11 +1017,15 @@
                 text-align: center;
                 gap: 48px;
                 padding: 40px 24px;
+                min-height: auto;
             }
-            .hero-content h1 { font-size: 32px; }
+            .hero-content h1 { font-size: 34px; }
             .cta-group { justify-content: center; }
-            .features { justify-content: center; flex-wrap: wrap; gap: 24px; }
+            .features { justify-content: center; flex-wrap: wrap; gap: 20px; }
             .hero-visual { max-width: 340px; }
+            .stats-strip { grid-template-columns: 1fr; }
+            .meetings-grid { grid-template-columns: 1fr; }
+            .management-section { padding: 0 20px 40px; }
         }
 
         @media (max-width: 480px) {
@@ -596,67 +1038,103 @@
             .hero-content p { font-size: 16px; }
             .cta-group { flex-direction: column; width: 100%; }
             .btn { width: 100%; justify-content: center; }
+            .form-row { flex-direction: column; gap: 0; }
+            .user-dropdown { right: -20px; }
         }
     </style>
 </head>
 <body>
+    <!-- Animated background shapes -->
+    <div class="bg-shapes">
+        <div class="bg-shape"></div>
+        <div class="bg-shape"></div>
+        <div class="bg-shape"></div>
+    </div>
+
+    <!-- Toast container -->
+    <div class="toast-container" id="toastContainer"></div>
+
     <!-- Navbar -->
     <nav class="navbar">
-        <a href="/" class="navbar-brand">
-            <img src="images/justix-logo.svg" alt="LearnX Meets">
+        <a href="/welcome.html" class="navbar-brand">
+            <img src="images/learnx-logo.svg" alt="LearnX Meets">
         </a>
         <div class="navbar-right">
-            <!-- Create meeting - admin/moderator only -->
+            <span class="navbar-time" id="currentTime"></span>
+
+            <!-- Create meeting - admin/moderator/teacher only -->
             <button class="nav-btn nav-btn-primary btn-create" id="createMeetingBtn" onclick="openCreateModal()">
                 <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd"/></svg>
                 New Meeting
             </button>
+
             <!-- Login button - shown when not authenticated -->
             <a href="/login.html" class="nav-btn nav-btn-outline" id="loginBtn">
                 <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 3a1 1 0 011 1v12a1 1 0 11-2 0V4a1 1 0 011-1zm7.707 3.293a1 1 0 010 1.414L9.414 9H17a1 1 0 110 2H9.414l1.293 1.293a1 1 0 01-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
                 Sign In
             </a>
-            <!-- User badge - shown when authenticated -->
-            <div class="nav-btn nav-btn-ghost" id="userBadge" style="display:none; cursor:default;">
-                <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>
-                <span id="userName"></span>
+
+            <!-- User badge with dropdown -->
+            <div class="user-badge-wrap" id="userBadgeWrap">
+                <div class="user-badge" id="userBadge" onclick="toggleUserDropdown(event)">
+                    <div class="avatar" id="userAvatar"></div>
+                    <span id="userName"></span>
+                    <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+                </div>
+                <div class="user-dropdown" id="userDropdown">
+                    <div class="dropdown-user-info">
+                        <div class="name" id="dropdownName"></div>
+                        <div class="email" id="dropdownEmail"></div>
+                        <div class="role-badge" id="dropdownRole"></div>
+                    </div>
+                    <button class="user-dropdown-item danger" onclick="logout()">
+                        <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clip-rule="evenodd"/></svg>
+                        Sign Out
+                    </button>
+                </div>
             </div>
-            <span class="navbar-time" id="currentTime"></span>
         </div>
     </nav>
 
     <!-- Hero -->
     <section class="hero">
         <div class="hero-content">
-            <!-- Info banner for logged-in non-admin users -->
+            <!-- Info banner for non-admin users -->
             <div class="info-banner" id="infoBanner">
-                <div class="info-banner-icon">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                <div class="info-banner-inner">
+                    <div class="info-banner-icon">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                    </div>
+                    <div class="info-banner-text">
+                        <h3>Welcome to LearnX Meets</h3>
+                        <p>You can join meetings via links shared by your instructors. Meeting creation is available for administrators, moderators, and teachers.</p>
+                    </div>
                 </div>
-                <div class="info-banner-text">
-                    <h3>Welcome to LearnX Meets</h3>
-                    <p>You can join meetings via links shared by your instructors. Meeting creation is available for administrators and moderators from the dashboard.</p>
-                </div>
+            </div>
+
+            <div class="badge">
+                <div class="dot"></div>
+                Video Conferencing for Education
             </div>
 
             <h1>Premium video meetings by <span>LearnX</span></h1>
             <p>
-                Secure, high-quality video conferencing for your academy.
-                Join meetings created by your instructors directly from your dashboard.
+                Secure, high-quality video conferencing built for your academy.
+                Connect with instructors and students in crystal-clear HD meetings.
             </p>
 
-            <div class="cta-group">
-                <a href="https://learnx.uz" class="btn btn-primary" id="dashboardBtn">
+            <div class="cta-group" id="ctaGroup">
+                <a href="/login.html" class="btn btn-primary" id="heroCta">
+                    <svg class="btn-icon" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"/>
+                    </svg>
+                    <span id="heroCtaText">Get Started</span>
+                </a>
+                <a href="https://learnx.uz" class="btn btn-secondary">
                     <svg class="btn-icon" viewBox="0 0 20 20" fill="currentColor">
                         <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
                     </svg>
                     Go to LearnX
-                </a>
-                <a href="https://learnx.uz/help" class="btn btn-secondary">
-                    <svg class="btn-icon" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
-                    </svg>
-                    Learn More
                 </a>
             </div>
 
@@ -706,6 +1184,55 @@
         </div>
     </section>
 
+    <!-- Management Section (admin only) -->
+    <section class="management-section" id="managementSection">
+        <div class="section-header">
+            <h2>My Meetings</h2>
+            <button class="refresh-btn" onclick="loadMeetings()">
+                <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/></svg>
+                Refresh
+            </button>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-strip" id="statsStrip">
+            <div class="stat-card">
+                <div class="stat-label">
+                    <svg viewBox="0 0 20 20" fill="#9ca3af"><path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zm12.553 1.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z"/></svg>
+                    Total Meetings
+                </div>
+                <div class="stat-value" id="statTotal">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">
+                    <svg viewBox="0 0 20 20" fill="#22c55e"><circle cx="10" cy="10" r="6"/></svg>
+                    Active Now
+                </div>
+                <div class="stat-value" id="statActive">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">
+                    <svg viewBox="0 0 20 20" fill="#f59e0b"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg>
+                    Scheduled
+                </div>
+                <div class="stat-value" id="statScheduled">0</div>
+            </div>
+        </div>
+
+        <!-- Meeting cards -->
+        <div id="meetingsContainer">
+            <div class="meetings-loading" id="meetingsLoading">
+                <div class="spinner"></div>
+                <p style="color:#9ca3af; font-size:14px;">Loading meetings...</p>
+            </div>
+            <div class="meetings-grid" id="meetingsGrid"></div>
+            <div class="meetings-empty" id="meetingsEmpty" style="display:none;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                <p>No meetings yet. Click "New Meeting" to create one.</p>
+            </div>
+        </div>
+    </section>
+
     <!-- Create Meeting Modal -->
     <div class="modal-backdrop" id="createModal">
         <div class="modal">
@@ -716,7 +1243,6 @@
                 </button>
             </div>
             <div class="modal-body">
-                <!-- Form -->
                 <div id="createForm">
                     <div class="form-group">
                         <label for="meetingTitle">Title *</label>
@@ -760,7 +1286,6 @@
                         </div>
                     </div>
 
-                    <!-- Participants section (visible when private) -->
                     <div class="participants-section" id="participantsSection">
                         <label>Invite Participants by Email</label>
                         <div class="email-input-wrap">
@@ -775,7 +1300,6 @@
                         <button class="btn-submit primary" id="submitBtn" onclick="createMeeting()">Create Meeting</button>
                     </div>
                 </div>
-                <!-- Success result -->
                 <div id="createResult" style="display:none;">
                     <div class="result-card">
                         <h3>Meeting Created</h3>
@@ -823,7 +1347,7 @@
             const el = document.getElementById('currentTime');
             if (el) {
                 el.textContent =
-                    now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' | ' +
+                    now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + '  \u00b7  ' +
                     now.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
             }
         }
@@ -831,8 +1355,32 @@
         setInterval(updateTime, 30000);
 
         // ---- JWT token helpers ----
+        const TOKEN_KEY = 'learnx_access_token';
+        const REFRESH_KEY = 'learnx_refresh_token';
+
         const getJwtToken = () =>
-            sessionStorage.getItem('jitsi_jwt_token') || localStorage.getItem('jitsi_jwt_token');
+            sessionStorage.getItem(TOKEN_KEY) || localStorage.getItem(TOKEN_KEY);
+
+        const getRefreshToken = () =>
+            sessionStorage.getItem(REFRESH_KEY) || localStorage.getItem(REFRESH_KEY);
+
+        function storeTokens(accessToken, refreshToken) {
+            if (accessToken) {
+                sessionStorage.setItem(TOKEN_KEY, accessToken);
+                localStorage.setItem(TOKEN_KEY, accessToken);
+            }
+            if (refreshToken) {
+                sessionStorage.setItem(REFRESH_KEY, refreshToken);
+                localStorage.setItem(REFRESH_KEY, refreshToken);
+            }
+        }
+
+        function clearTokens() {
+            sessionStorage.removeItem(TOKEN_KEY);
+            localStorage.removeItem(TOKEN_KEY);
+            sessionStorage.removeItem(REFRESH_KEY);
+            localStorage.removeItem(REFRESH_KEY);
+        }
 
         function parseJwt(token) {
             try {
@@ -844,17 +1392,6 @@
         function isTokenExpired(payload) {
             if (!payload || !payload.exp) return true;
             return (payload.exp * 1000) < Date.now();
-        }
-
-        function clearToken() {
-            sessionStorage.removeItem('jitsi_jwt_token');
-            localStorage.removeItem('jitsi_jwt_token');
-            sessionStorage.removeItem('jitsi_refresh_token');
-            localStorage.removeItem('jitsi_refresh_token');
-        }
-
-        function getRefreshToken() {
-            return sessionStorage.getItem('jitsi_refresh_token') || localStorage.getItem('jitsi_refresh_token');
         }
 
         async function refreshAccessToken() {
@@ -870,16 +1407,23 @@
                     const data = await resp.json();
                     const newToken = data.access_token;
                     if (newToken) {
-                        sessionStorage.setItem('jitsi_jwt_token', newToken);
-                        localStorage.setItem('jitsi_jwt_token', newToken);
-                        if (data.refresh_token) {
-                            sessionStorage.setItem('jitsi_refresh_token', data.refresh_token);
-                            localStorage.setItem('jitsi_refresh_token', data.refresh_token);
-                        }
+                        storeTokens(newToken, data.refresh_token || null);
                         return newToken;
                     }
                 }
             } catch (e) { /* refresh failed */ }
+            return null;
+        }
+
+        async function getValidToken() {
+            let token = getJwtToken();
+            if (!token) return null;
+            const payload = parseJwt(token);
+            if (payload && !isTokenExpired(payload)) return token;
+            // Try refresh
+            const newToken = await refreshAccessToken();
+            if (newToken) return newToken;
+            clearTokens();
             return null;
         }
 
@@ -893,24 +1437,68 @@
         }
 
         function getUserName(payload) {
-            return payload.preferred_username || payload.name || payload.given_name || payload.email || 'User';
+            return payload.name || payload.preferred_username || payload.given_name || payload.email || 'User';
+        }
+
+        function getUserEmail(payload) {
+            return payload.email || payload.preferred_username || '';
+        }
+
+        function getInitials(name) {
+            if (!name) return '?';
+            const parts = name.trim().split(/\s+/);
+            if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+            return name.substring(0, 2).toUpperCase();
+        }
+
+        function getHighestRole(roles) {
+            if (roles.includes('ADMIN')) return 'Admin';
+            if (roles.includes('MODERATOR')) return 'Moderator';
+            if (roles.includes('TEACHER')) return 'Teacher';
+            if (roles.includes('STUDENT')) return 'Student';
+            return 'User';
         }
 
         // ---- Auth UI ----
+        let currentPayload = null;
+        let isAdmin = false;
+
         function applyAuthUI(jwt) {
             const p = parseJwt(jwt);
             if (!p) return;
-            document.getElementById('loginBtn').style.display = 'none';
-            document.getElementById('userBadge').style.display = 'inline-flex';
-            document.getElementById('userName').textContent = getUserName(p);
+            currentPayload = p;
 
+            // Hide login, show user badge
+            document.getElementById('loginBtn').style.display = 'none';
+            const badgeWrap = document.getElementById('userBadgeWrap');
+            badgeWrap.classList.add('show');
+
+            const name = getUserName(p);
+            const email = getUserEmail(p);
             const roles = getRoles(p);
-            const isAdmin = roles.includes('ADMIN') || roles.includes('MODERATOR') || roles.includes('TEACHER');
+            const highestRole = getHighestRole(roles);
+
+            document.getElementById('userName').textContent = name;
+            document.getElementById('userAvatar').textContent = getInitials(name);
+            document.getElementById('dropdownName').textContent = name;
+            document.getElementById('dropdownEmail').textContent = email;
+            document.getElementById('dropdownRole').textContent = highestRole;
+
+            isAdmin = roles.includes('ADMIN') || roles.includes('MODERATOR') || roles.includes('TEACHER');
 
             if (isAdmin) {
                 document.getElementById('createMeetingBtn').classList.add('show');
+                document.getElementById('managementSection').classList.add('show');
+                // Update hero CTA
+                document.getElementById('heroCta').href = 'javascript:void(0)';
+                document.getElementById('heroCta').onclick = function() { openCreateModal(); };
+                document.getElementById('heroCtaText').textContent = 'New Meeting';
+                loadMeetings();
             } else {
                 document.getElementById('infoBanner').classList.add('show');
+                // Update hero CTA for non-admin authenticated users
+                document.getElementById('heroCta').href = 'https://learnx.uz';
+                document.getElementById('heroCtaText').textContent = 'Go to Dashboard';
             }
         }
 
@@ -921,15 +1509,214 @@
             if (token && payload && !isTokenExpired(payload)) {
                 applyAuthUI(token);
             } else if (token) {
-                // Token expired — try refresh
                 const newToken = await refreshAccessToken();
                 if (newToken) {
                     applyAuthUI(newToken);
                 } else {
-                    clearToken();
+                    clearTokens();
                 }
             }
         })();
+
+        // ---- User Dropdown ----
+        window.toggleUserDropdown = function(e) {
+            e.stopPropagation();
+            document.getElementById('userDropdown').classList.toggle('open');
+        };
+        document.addEventListener('click', function(e) {
+            const dropdown = document.getElementById('userDropdown');
+            if (dropdown && !e.target.closest('.user-badge-wrap')) {
+                dropdown.classList.remove('open');
+            }
+        });
+
+        // ---- Logout ----
+        window.logout = function() {
+            clearTokens();
+            window.location.href = '/welcome.html';
+        };
+
+        // ---- Load Meetings ----
+        window.loadMeetings = async function() {
+            const grid = document.getElementById('meetingsGrid');
+            const loading = document.getElementById('meetingsLoading');
+            const empty = document.getElementById('meetingsEmpty');
+
+            grid.innerHTML = '';
+            loading.style.display = '';
+            empty.style.display = 'none';
+
+            const token = await getValidToken();
+            if (!token) {
+                loading.style.display = 'none';
+                showToast('Session expired. Please sign in again.', 'error');
+                return;
+            }
+
+            try {
+                const resp = await fetch(MEETING_URL + '/meetings', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+
+                if (resp.status === 401 || resp.status === 403) {
+                    clearTokens();
+                    showToast('Session expired. Please sign in again.', 'error');
+                    setTimeout(function() { window.location.href = '/login.html'; }, 1500);
+                    return;
+                }
+
+                if (!resp.ok) throw new Error('HTTP ' + resp.status);
+
+                const meetings = await resp.json();
+                const list = Array.isArray(meetings) ? meetings : (meetings.content || meetings.data || []);
+
+                loading.style.display = 'none';
+
+                // Update stats
+                const total = list.length;
+                const active = list.filter(m => m.status === 'IN_PROGRESS').length;
+                const scheduled = list.filter(m => m.status === 'SCHEDULED').length;
+
+                animateCountUp('statTotal', total);
+                animateCountUp('statActive', active);
+                animateCountUp('statScheduled', scheduled);
+
+                if (list.length === 0) {
+                    empty.style.display = '';
+                    return;
+                }
+
+                // Sort: in-progress first, then scheduled, then completed
+                const statusOrder = { 'IN_PROGRESS': 0, 'SCHEDULED': 1, 'COMPLETED': 2, 'CANCELLED': 3 };
+                list.sort((a, b) => (statusOrder[a.status] || 9) - (statusOrder[b.status] || 9));
+
+                list.forEach(function(meeting, index) {
+                    const card = createMeetingCard(meeting, index);
+                    grid.appendChild(card);
+                    // Staggered entrance
+                    setTimeout(function() {
+                        card.classList.add('visible');
+                    }, 80 * index);
+                });
+            } catch (err) {
+                loading.style.display = 'none';
+                showToast('Failed to load meetings: ' + err.message, 'error');
+            }
+        };
+
+        function createMeetingCard(meeting, index) {
+            const card = document.createElement('div');
+            card.className = 'meeting-card';
+            card.style.animationDelay = (index * 0.08) + 's';
+
+            const statusClass = (meeting.status || '').toLowerCase().replace('_', '-');
+            const statusLabel = (meeting.status || 'UNKNOWN').replace('_', ' ');
+            const roomUrl = meeting.jitsiRoomUrl || (window.location.origin + '/' + meeting.roomName);
+            const scheduledTime = meeting.scheduledAt
+                ? new Date(meeting.scheduledAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+                : 'Not scheduled';
+            const participants = meeting.participantCount || meeting.currentParticipants || 0;
+
+            card.innerHTML =
+                '<div class="meeting-card-header">' +
+                    '<div class="meeting-card-title">' + escapeHtml(meeting.title || 'Untitled Meeting') + '</div>' +
+                    '<div class="status-badge ' + statusClass + '">' + statusLabel + '</div>' +
+                '</div>' +
+                '<div class="meeting-card-meta">' +
+                    '<div class="meta-row">' +
+                        '<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg>' +
+                        '<span>' + scheduledTime + '</span>' +
+                    '</div>' +
+                    '<div class="meta-row">' +
+                        '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/></svg>' +
+                        '<span>' + participants + ' participant' + (participants !== 1 ? 's' : '') + '</span>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="meeting-card-actions">' +
+                    '<button class="card-action-btn primary" onclick="window.open(\'' + escapeHtml(roomUrl) + '\', \'_blank\')">' +
+                        '<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"/></svg>' +
+                        'Join' +
+                    '</button>' +
+                    '<button class="card-action-btn ghost" onclick="copyMeetingLink(\'' + escapeHtml(roomUrl) + '\')">' +
+                        '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z"/><path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z"/></svg>' +
+                        'Copy Link' +
+                    '</button>' +
+                    (meeting.status === 'SCHEDULED' ?
+                        '<button class="card-action-btn danger" onclick="cancelMeeting(\'' + meeting.id + '\')">' +
+                            '<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>' +
+                            'Cancel' +
+                        '</button>' : '') +
+                '</div>';
+
+            return card;
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        // ---- Copy meeting link ----
+        window.copyMeetingLink = function(url) {
+            navigator.clipboard.writeText(url).then(function() {
+                showToast('Meeting link copied to clipboard', 'success');
+            }).catch(function() {
+                // Fallback
+                const input = document.createElement('input');
+                input.value = url;
+                document.body.appendChild(input);
+                input.select();
+                document.execCommand('copy');
+                document.body.removeChild(input);
+                showToast('Meeting link copied to clipboard', 'success');
+            });
+        };
+
+        // ---- Cancel meeting ----
+        window.cancelMeeting = async function(meetingId) {
+            if (!confirm('Are you sure you want to cancel this meeting?')) return;
+            const token = await getValidToken();
+            if (!token) {
+                showToast('Session expired. Please sign in again.', 'error');
+                return;
+            }
+            try {
+                const resp = await fetch(MEETING_URL + '/meetings/' + meetingId + '/cancel', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (resp.ok || resp.status === 204) {
+                    showToast('Meeting cancelled', 'success');
+                    loadMeetings();
+                } else {
+                    throw new Error('HTTP ' + resp.status);
+                }
+            } catch (err) {
+                showToast('Failed to cancel meeting: ' + err.message, 'error');
+            }
+        };
+
+        // ---- Count-up animation ----
+        function animateCountUp(elementId, target) {
+            const el = document.getElementById(elementId);
+            if (!el) return;
+            const duration = 800;
+            const start = parseInt(el.textContent) || 0;
+            const diff = target - start;
+            if (diff === 0) { el.textContent = target; return; }
+            const startTime = performance.now();
+
+            function step(now) {
+                const elapsed = now - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                // Ease out cubic
+                const eased = 1 - Math.pow(1 - progress, 3);
+                el.textContent = Math.round(start + diff * eased);
+                if (progress < 1) requestAnimationFrame(step);
+            }
+            requestAnimationFrame(step);
+        }
 
         // ---- Participant emails list ----
         const participantEmails = [];
@@ -965,7 +1752,7 @@
             const container = document.getElementById('emailChips');
             container.innerHTML = participantEmails.map(email =>
                 '<div class="email-chip">' +
-                    '<span>' + email + '</span>' +
+                    '<span>' + escapeHtml(email) + '</span>' +
                     '<button onclick="window._removeParticipant(\'' + email + '\')">&times;</button>' +
                 '</div>'
             ).join('');
@@ -985,25 +1772,21 @@
         document.getElementById('createModal').addEventListener('click', function(e) {
             if (e.target === e.currentTarget) window.closeCreateModal();
         });
+        // Close modal on Escape
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                window.closeCreateModal();
+                document.getElementById('userDropdown').classList.remove('open');
+            }
+        });
 
         // ---- Create Meeting API ----
         window.createMeeting = async function() {
-            let jwt = getJwtToken();
-            if (!jwt) {
-                showToast('Please sign in first.');
+            const token = await getValidToken();
+            if (!token) {
+                showToast('Please sign in first.', 'error');
+                setTimeout(function() { window.location.href = '/login.html'; }, 1500);
                 return;
-            }
-
-            // Check expiry — try refresh first
-            const p = parseJwt(jwt);
-            if (!p || isTokenExpired(p)) {
-                jwt = await refreshAccessToken();
-                if (!jwt) {
-                    clearToken();
-                    showToast('Session expired. Please sign in again.');
-                    setTimeout(function() { window.location.href = '/login.html'; }, 1500);
-                    return;
-                }
             }
 
             const title = document.getElementById('meetingTitle').value.trim();
@@ -1028,7 +1811,6 @@
                 maxParticipants: parseInt(document.getElementById('meetingMaxParticipants').value) || null,
             };
 
-            // Add participants for private meetings
             if (!isPublic && participantEmails.length > 0) {
                 body.participants = participantEmails.map(function(email) {
                     return { email: email, role: 'PARTICIPANT' };
@@ -1040,14 +1822,14 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + jwt
+                        'Authorization': 'Bearer ' + token
                     },
                     body: JSON.stringify(body)
                 });
 
                 if (resp.status === 401 || resp.status === 403) {
-                    clearToken();
-                    showToast('Session expired. Please sign in again.');
+                    clearTokens();
+                    showToast('Session expired. Please sign in again.', 'error');
                     setTimeout(function() { window.location.href = '/login.html'; }, 1500);
                     return;
                 }
@@ -1059,14 +1841,18 @@
 
                 const meeting = await resp.json();
 
-                // Show success
                 document.getElementById('createForm').style.display = 'none';
                 document.getElementById('createResult').style.display = '';
                 document.getElementById('modalTitle').textContent = 'Meeting Ready';
                 document.getElementById('resultTitle').textContent = meeting.title;
                 document.getElementById('resultUrl').value = meeting.jitsiRoomUrl || (window.location.origin + '/' + meeting.roomName);
+
+                showToast('Meeting created successfully!', 'success');
+
+                // Refresh the meeting list
+                if (isAdmin) loadMeetings();
             } catch (err) {
-                showToast('Failed to create meeting: ' + err.message);
+                showToast('Failed to create meeting: ' + err.message, 'error');
             } finally {
                 btn.disabled = false;
                 btn.textContent = 'Create Meeting';
@@ -1099,18 +1885,17 @@
             });
         };
 
-        function showToast(msg) {
-            var existing = document.querySelector('.toast');
-            if (existing) existing.remove();
-            var toast = document.createElement('div');
-            toast.className = 'toast';
+        // ---- Toast ----
+        function showToast(msg, type) {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = 'toast' + (type ? ' ' + type : '');
             toast.textContent = msg;
-            document.body.appendChild(toast);
-            setTimeout(function() { toast.remove(); }, 3000);
+            container.appendChild(toast);
+            setTimeout(function() { toast.remove(); }, 3200);
         }
+        window.showToast = showToast;
     })();
     </script>
 </body>
 </html>
-</content>
-</invoke>

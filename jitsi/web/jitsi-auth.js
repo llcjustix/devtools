@@ -74,7 +74,7 @@
 
         // Store current URL to return after login
         try {
-            sessionStorage.setItem('jitsi_return_url', currentUrl);
+            sessionStorage.setItem('learnx_return_url', currentUrl);
         } catch (e) {
             console.warn('[LearnX Meets] Could not store return URL:', e);
         }

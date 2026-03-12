@@ -4,12 +4,12 @@
   "description": "Secure video meetings for LearnX Academy",
   "icons": [
     {
-      "src": "images/justix-icon.svg",
+      "src": "images/learnx-icon.svg",
       "type": "image/svg+xml",
       "sizes": "any"
     },
     {
-      "src": "images/justix-watermark.svg",
+      "src": "images/learnx-watermark.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "maskable"

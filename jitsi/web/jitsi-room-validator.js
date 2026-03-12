@@ -99,7 +99,7 @@
 
     // Get JWT token from browser storage (sessionStorage → localStorage fallback)
     const getJwtToken = () => {
-        return sessionStorage.getItem('jitsi_jwt_token') || localStorage.getItem('jitsi_jwt_token');
+        return sessionStorage.getItem('learnx_access_token') || localStorage.getItem('learnx_access_token');
     };
 
     // Parse JWT payload
@@ -119,15 +119,15 @@
 
     // Clear stored tokens
     const clearToken = () => {
-        sessionStorage.removeItem('jitsi_jwt_token');
-        localStorage.removeItem('jitsi_jwt_token');
-        sessionStorage.removeItem('jitsi_refresh_token');
-        localStorage.removeItem('jitsi_refresh_token');
+        sessionStorage.removeItem('learnx_access_token');
+        localStorage.removeItem('learnx_access_token');
+        sessionStorage.removeItem('learnx_refresh_token');
+        localStorage.removeItem('learnx_refresh_token');
     };
 
     // Get refresh token
     const getRefreshToken = () => {
-        return sessionStorage.getItem('jitsi_refresh_token') || localStorage.getItem('jitsi_refresh_token');
+        return sessionStorage.getItem('learnx_refresh_token') || localStorage.getItem('learnx_refresh_token');
     };
 
     // Auth service URL detection
@@ -152,11 +152,11 @@
             if (resp.ok) {
                 const data = await resp.json();
                 if (data.access_token) {
-                    sessionStorage.setItem('jitsi_jwt_token', data.access_token);
-                    localStorage.setItem('jitsi_jwt_token', data.access_token);
+                    sessionStorage.setItem('learnx_access_token', data.access_token);
+                    localStorage.setItem('learnx_access_token', data.access_token);
                     if (data.refresh_token) {
-                        sessionStorage.setItem('jitsi_refresh_token', data.refresh_token);
-                        localStorage.setItem('jitsi_refresh_token', data.refresh_token);
+                        sessionStorage.setItem('learnx_refresh_token', data.refresh_token);
+                        localStorage.setItem('learnx_refresh_token', data.refresh_token);
                     }
                     return data.access_token;
                 }

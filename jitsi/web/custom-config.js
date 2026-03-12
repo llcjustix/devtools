@@ -188,7 +188,7 @@ config.transcription = {
 // Custom branding
 config.defaultLocalDisplayName = 'Me';
 config.defaultRemoteDisplayName = 'Participant';
-config.defaultLogoUrl = 'images/justix-watermark.svg';
+config.defaultLogoUrl = 'images/learnx-watermark.svg';
 
 // Toolbar buttons - hide unnecessary features
 config.toolbarButtons = [
