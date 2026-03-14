@@ -128,6 +128,28 @@ if (window.ROOM_CONFIG) {
     window.applyRoomConfiguration(window.ROOM_CONFIG);
 }
 
+// Auto-fetch meeting info from backend to set title and room config
+(function() {
+    var roomName = window.location.pathname.replace(/^\//, '').split('/')[0];
+    if (roomName && roomName.length > 0 && roomName !== 'welcome.html' && roomName !== 'schedule.html' && roomName !== 'login.html') {
+        fetch(meetingServiceUrl + '/api/v1/meetings/by-room/' + encodeURIComponent(roomName))
+            .then(function(r) { return r.ok ? r.json() : null; })
+            .then(function(meeting) {
+                if (meeting && meeting.title) {
+                    config.subject = meeting.title;
+                    // Also update document title
+                    document.title = meeting.title + ' | LearnX Meets';
+                    console.log('[LearnX Meets] Meeting title loaded:', meeting.title);
+                    // Apply full room config if settings exist
+                    if (meeting.settings) {
+                        window.applyRoomConfiguration(meeting.settings);
+                    }
+                }
+            })
+            .catch(function(e) { console.log('[LearnX Meets] Could not fetch meeting info:', e); });
+    }
+})();
+
 // Disable file recording service (Dropbox integration)
 config.fileRecordingsEnabled = false;
 config.dropbox = {
@@ -177,56 +199,95 @@ config.defaultLocalDisplayName = 'Me';
 config.defaultRemoteDisplayName = 'Participant';
 config.defaultLogoUrl = 'images/learnx-watermark.svg';
 
-// Toolbar buttons - hide unnecessary features
+// Toolbar buttons - only essential features (no tile view toggle)
 config.toolbarButtons = [
     'camera',
     'chat',
     'closedcaptions',
     'desktop',
-    'download',
-    'embedmeeting',
-    'etherpad',
-    'feedback',
     'filmstrip',
     'fullscreen',
     'hangup',
-    'help',
-    'highlight',
-    'invite',
-    'linktosalesforce',
-    'livestreaming', // Hidden via liveStreaming.enabled = false
     'microphone',
     'noisesuppression',
     'participants-pane',
     'profile',
     'raisehand',
-    'recording', // Enabled - uses Jibri backend logic
+    'reactions',
+    'recording',
     'security',
     'select-background',
     'settings',
     'shareaudio',
     'sharedvideo',
-    'shortcuts',
-    'stats',
-    'tileview',
     'toggle-camera',
     'videoquality',
     'whiteboard'
 ];
 
-// Disable features not needed
+// Always use tile view layout (Google Meet style grid)
+config.disableTileView = false;
+config.startInTileView = true; // Start in tile view by default
+
+// Hide room name / meeting ID from conference header
+config.hideConferenceSubject = true;
+config.hideConferenceTimer = false;
+
+// Disable connection/performance indicator (the stats icon on top)
+config.connectionIndicators = {
+    disabled: true
+};
+
+// Conference info header — only show essential items (no subject/room name)
+config.conferenceInfo = {
+    alwaysVisible: ['recording'],
+    autoHide: ['conference-timer', 'participants-count', 'raised-hands-count']
+};
+
+// ========================================
+// REACTIONS & SOUNDS
+// ========================================
+config.disableReactions = false;
+config.disableSelfViewSettings = false;
+config.reactions = {
+    enabled: true
+};
+config.giphy = {
+    enabled: true,  // Enable GIF reactions for richer expression
+    displayMode: 'tile' // 'tile' shows in chat, 'all' shows full-screen
+};
+// Sound settings — users can toggle in Settings > Sounds
+// Moderators can mute reaction sounds for all participants
+config.disableSounds = false;
+config.soundsReactions = true; // Enable reaction sounds by default
+
+// ========================================
+// GENERAL SETTINGS
+// ========================================
 config.disableProfile = false;
 config.disableInviteFunctions = false;
+config.enableWelcomePage = false;
+config.enableClosePage = false;
 
-// CRITICAL FIX: Disable welcome page completely
-config.enableWelcomePage = false;  // Users cannot create rooms from Jitsi UI
-config.enableClosePage = false;    // We handle close/redirect ourselves
-
-// Prejoin page (name entry before joining)
+// Prejoin page — ask audio/video preferences before joining
 config.prejoinConfig = {
     enabled: true,
-    hideDisplayName: false
+    hideDisplayName: false,
+    hideExtraJoinButtons: ['no-audio', 'by-phone'] // Remove "join without audio" from dropdown, keep it simple
 };
+
+// ========================================
+// PER-USER SETTINGS PERSISTENCE
+// Jitsi stores user preferences in localStorage automatically:
+// - Audio/video device selection
+// - Display name
+// - Virtual background
+// - Audio output device
+// - Start muted preferences
+// - Tile view preference
+// These persist across meetings for the same browser/user.
+// ========================================
+config.doNotStoreRoom = true; // Don't store room names in localStorage for privacy
 
 // Hangup menu: moderators see "Leave" + "End meeting for all" (like Zoom)
 // Regular participants only see "Leave meeting"
@@ -235,23 +296,33 @@ config.hangupMenuEnabled = true;
 // ========================================
 // MEETING LEAVE/END HANDLER
 // On leave or "end for all" → redirect to welcome page
-// Meeting stays available until it EXPIRES (no backend status change needed)
 // ========================================
 (function() {
     'use strict';
 
+    let hasRedirected = false;
+    const roomPath = window.location.pathname;
+
     const redirectToWelcome = () => {
-        window.location.href = '/welcome.html';
+        if (hasRedirected) return;
+        hasRedirected = true;
+        console.log('[LearnX Meets] Redirecting to welcome page');
+        window.location.replace('/welcome.html');
     };
 
-    // Intercept Jitsi's post-hangup navigation (it tries '/' or '#')
+    // 1. Intercept Jitsi's post-hangup navigation (pushState/replaceState to '/' or close page)
     const originalPushState = history.pushState;
     const originalReplaceState = history.replaceState;
 
     const interceptNav = (url) => {
-        if (typeof url === 'string' && (url === '/' || url === '' || url === window.location.origin + '/')) {
-            redirectToWelcome();
-            return true;
+        if (typeof url === 'string') {
+            const cleaned = url.replace(window.location.origin, '');
+            if (cleaned === '/' || cleaned === '' || cleaned === '#' ||
+                cleaned.includes('close3.html') || cleaned.includes('close.html') ||
+                cleaned.includes('static/close')) {
+                redirectToWelcome();
+                return true;
+            }
         }
         return false;
     };
@@ -262,6 +333,81 @@ config.hangupMenuEnabled = true;
     history.replaceState = function() {
         if (!interceptNav(arguments[2])) originalReplaceState.apply(this, arguments);
     };
+
+    // 2. Intercept location.href assignment
+    let currentHref = window.location.href;
+    const hrefCheck = setInterval(() => {
+        if (window.location.href !== currentHref) {
+            const newPath = window.location.pathname;
+            if (newPath === '/' || newPath === '' || newPath.includes('close')) {
+                redirectToWelcome();
+            }
+            currentHref = window.location.href;
+        }
+    }, 200);
+
+    // 3. Watch for Jitsi conference events via APP object
+    const waitForApp = setInterval(() => {
+        if (typeof APP !== 'undefined' && APP.conference) {
+            clearInterval(waitForApp);
+            // Hook into conference will leave
+            if (APP.conference._location) {
+                const origAssign = APP.conference._location.assign;
+                if (origAssign) {
+                    APP.conference._location.assign = function(url) {
+                        redirectToWelcome();
+                    };
+                }
+            }
+            // Listen for hangup via APP
+            const origHangup = APP.conference.hangup;
+            if (origHangup) {
+                APP.conference.hangup = function() {
+                    origHangup.apply(this, arguments);
+                    setTimeout(redirectToWelcome, 500);
+                };
+            }
+        }
+    }, 500);
+
+    // 4. Watch for DOM changes indicating meeting ended
+    const observer = new MutationObserver(() => {
+        // Jitsi close/feedback/thankyou page
+        const closePage = document.querySelector(
+            '[class*="close-page"], [class*="meetingEnded"], [class*="location-changed"], ' +
+            '[class*="thank-you"], [data-testid*="close"], [class*="meeting-ended"]'
+        );
+        if (closePage) redirectToWelcome();
+
+        // Toolbar disappeared = conference ended
+        const toolbox = document.getElementById('new-toolbox');
+        const conferenceEl = document.querySelector('[id*="largeVideo"]');
+        if (conferenceEl && toolbox && toolbox.style.display === 'none' &&
+            !document.querySelector('.premeeting-screen')) {
+            setTimeout(redirectToWelcome, 300);
+        }
+    });
+
+    if (document.body) {
+        observer.observe(document.body, { childList: true, subtree: true, attributes: true });
+    } else {
+        document.addEventListener('DOMContentLoaded', () => {
+            observer.observe(document.body, { childList: true, subtree: true, attributes: true });
+        });
+    }
+
+    // 5. Handle popstate (back button after leaving)
+    window.addEventListener('popstate', () => {
+        const path = window.location.pathname;
+        if (path === '/' || path === '') redirectToWelcome();
+    });
+
+    // 6. Handle beforeunload cleanup
+    window.addEventListener('unload', () => {
+        clearInterval(hrefCheck);
+        clearInterval(waitForApp);
+        observer.disconnect();
+    });
 
     // Expose for external use
     window.LearnXMeeting = { leaveMeeting: redirectToWelcome };

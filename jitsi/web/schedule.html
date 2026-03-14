@@ -50,12 +50,12 @@
             50% { left: 120%; }
         }
         @keyframes toastIn {
-            from { opacity: 0; transform: translateX(60px); }
-            to { opacity: 1; transform: translateX(0); }
+            from { opacity: 0; transform: translateY(20px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
         }
         @keyframes toastOut {
-            from { opacity: 1; transform: translateX(0); }
-            to { opacity: 0; transform: translateX(60px); }
+            from { opacity: 1; transform: translateY(0) scale(1); }
+            to { opacity: 0; transform: translateY(20px) scale(0.95); }
         }
         @keyframes checkDraw {
             from { stroke-dashoffset: 24; }
@@ -226,27 +226,52 @@
         /* ---- Toast ---- */
         .toast-container {
             position: fixed;
-            top: 80px;
-            right: 20px;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
             z-index: 300;
             display: flex;
-            flex-direction: column;
-            gap: 8px;
+            flex-direction: column-reverse;
+            align-items: center;
+            gap: 10px;
         }
         .toast {
-            padding: 14px 20px 14px 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 20px;
             border-radius: 12px;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 500;
-            color: var(--text);
-            background: white;
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
-            animation: toastIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), toastOut 0.3s 2.9s ease forwards;
-            border-left: 4px solid var(--text-secondary);
-            max-width: 380px;
+            color: white;
+            background: #1e293b;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(12px);
+            animation: toastIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), toastOut 0.3s 2.9s ease forwards;
+            max-width: 420px;
+            white-space: nowrap;
         }
-        .toast.success { border-left-color: #10b981; }
-        .toast.error { border-left-color: #ef4444; }
+        .toast::before {
+            flex-shrink: 0;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+        }
+        .toast.success {
+            background: linear-gradient(135deg, #065f46, #064e3b);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+        .toast.success::before { content: '\2713'; color: #6ee7b7; }
+        .toast.error {
+            background: linear-gradient(135deg, #7f1d1d, #6b1a1a);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+        .toast.error::before { content: '!'; color: #fca5a5; }
 
         /* ---- Main layout ---- */
         .main-content {
@@ -697,6 +722,28 @@
             animation-delay: 0.3s;
         }
 
+        /* ---- Selected Date Display ---- */
+        .selected-date-display {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            background: linear-gradient(135deg, #f5f0ff, #ede5ff);
+            border: 1.5px solid rgba(124, 58, 237, 0.12);
+            border-radius: var(--radius-md);
+            margin-bottom: 16px;
+            transition: all 0.3s ease;
+        }
+        .selected-date-display span {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--primary-dark);
+        }
+        .selected-date-display.has-date {
+            background: linear-gradient(135deg, rgba(124, 58, 237, 0.08), rgba(124, 58, 237, 0.04));
+            border-color: var(--primary);
+        }
+
         /* ---- Mini Calendar ---- */
         .calendar {
             user-select: none;
@@ -1018,24 +1065,77 @@
         .tab-content { display: none; }
         .tab-content.active { display: block; }
 
-        /* ---- Filter buttons ---- */
-        .filter-btn {
-            padding: 6px 16px;
+        /* ---- Filter toolbar ---- */
+        .filter-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .filter-select-wrapper {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+        }
+        .filter-select-wrapper svg {
+            position: absolute;
+            left: 10px;
+            width: 14px;
+            height: 14px;
+            color: var(--text-secondary);
+            pointer-events: none;
+        }
+        .filter-select {
+            appearance: none;
+            -webkit-appearance: none;
+            padding: 8px 32px 8px 30px;
             border: 1.5px solid var(--border);
-            border-radius: 50px;
+            border-radius: var(--radius-sm);
+            background: white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right 10px center;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.2s;
+            min-width: 150px;
+        }
+        .filter-select:hover {
+            border-color: var(--primary-light);
+        }
+        .filter-select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+        }
+        .filter-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .filter-reset-btn {
+            padding: 7px 14px;
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-sm);
             background: white;
             font-family: inherit;
             font-size: 12px;
-            font-weight: 600;
+            font-weight: 500;
             color: var(--text-secondary);
             cursor: pointer;
             transition: all 0.2s;
         }
-        .filter-btn:hover { border-color: var(--primary-light); color: var(--primary); }
-        .filter-btn.active {
-            background: var(--primary);
-            color: white;
-            border-color: var(--primary);
+        .filter-reset-btn:hover {
+            border-color: var(--primary-light);
+            color: var(--primary);
+        }
+        .filter-count {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-left: auto;
         }
 
         /* ---- Meetings grid ---- */
@@ -1086,9 +1186,8 @@
         }
         .status-SCHEDULED { background: #eff6ff; color: #2563eb; }
         .status-IN_PROGRESS { background: #ecfdf5; color: #059669; }
-        .status-COMPLETED { background: #f1f5f9; color: #64748b; }
-        .status-CANCELLED { background: #fef2f2; color: #dc2626; }
         .status-EXPIRED { background: #fef3c7; color: #d97706; }
+        .status-CANCELLED { background: #fef2f2; color: #dc2626; }
 
         .meeting-card-meta {
             display: flex;
@@ -1190,6 +1289,106 @@
             .form-actions .btn { width: 100%; }
             .meeting-card-actions { flex-wrap: wrap; }
         }
+
+        /* ---- Custom Timepicker ---- */
+        /* ---- Time grid (reuses calendar styles) ---- */
+        .time-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 4px;
+            text-align: center;
+        }
+        .time-grid-cell {
+            width: 100%;
+            aspect-ratio: 1.6;
+            border-radius: 10px;
+            border: none;
+            background: transparent;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.15s;
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .time-grid-cell:hover {
+            background: #f5f0ff;
+        }
+        .time-grid-cell.selected {
+            background: linear-gradient(135deg, #7c3aed, #5b21b6);
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 2px 10px rgba(124, 58, 237, 0.3);
+        }
+        .time-grid-cell.selected:hover {
+            background: linear-gradient(135deg, #7c3aed, #5b21b6);
+        }
+        .minute-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px;
+            text-align: center;
+            max-width: 200px;
+            margin: 0 auto;
+        }
+        .minute-grid-cell {
+            padding: 14px 8px;
+            border-radius: 10px;
+            border: none;
+            background: transparent;
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.15s;
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .minute-grid-cell:hover {
+            background: #f5f0ff;
+        }
+        .minute-grid-cell.selected {
+            background: linear-gradient(135deg, #7c3aed, #5b21b6);
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 2px 10px rgba(124, 58, 237, 0.3);
+        }
+        .minute-grid-cell.selected:hover {
+            background: linear-gradient(135deg, #7c3aed, #5b21b6);
+        }
+        .calendar-back-btn {
+            width: 32px; height: 32px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+        }
+        .calendar-back-btn:hover {
+            background: #f5f0ff;
+            color: var(--primary);
+            border-color: var(--primary-light);
+        }
+        .calendar-back-btn svg { width: 14px; height: 14px; }
+        .time-selected-info {
+            text-align: center;
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 8px;
+            font-weight: 500;
+        }
+        .time-selected-info strong {
+            color: var(--primary);
+        }
     </style>
 </head>
 <body>
@@ -1243,13 +1442,38 @@
 
         <!-- TAB: My Meetings -->
         <div class="tab-content active" id="tabMeetings" style="max-width:1200px;margin:0 auto;padding:0 40px 60px">
-            <!-- Filter bar -->
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:20px;flex-wrap:wrap">
-                <button class="filter-btn active" data-filter="all" onclick="filterMeetings('all')">All</button>
-                <button class="filter-btn" data-filter="SCHEDULED" onclick="filterMeetings('SCHEDULED')">Scheduled</button>
-                <button class="filter-btn" data-filter="IN_PROGRESS" onclick="filterMeetings('IN_PROGRESS')">In Progress</button>
-                <button class="filter-btn" data-filter="COMPLETED" onclick="filterMeetings('COMPLETED')">Completed</button>
-                <button class="filter-btn" data-filter="CANCELLED" onclick="filterMeetings('CANCELLED')">Cancelled</button>
+            <!-- Filter toolbar -->
+            <div class="filter-toolbar">
+                <div class="filter-select-wrapper">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <select class="filter-select" id="filterStatus" onchange="applyFilters()">
+                        <option value="">All Statuses</option>
+                        <option value="SCHEDULED">Scheduled</option>
+                        <option value="IN_PROGRESS">In Progress</option>
+                        <option value="EXPIRED">Expired</option>
+                        <option value="CANCELLED">Cancelled</option>
+                    </select>
+                </div>
+                <div class="filter-select-wrapper">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    <select class="filter-select" id="filterDate" onchange="applyFilters()">
+                        <option value="today">Today</option>
+                        <option value="week">This Week</option>
+                        <option value="month">This Month</option>
+                        <option value="all">All Time</option>
+                    </select>
+                </div>
+                <div class="filter-select-wrapper">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/></svg>
+                    <select class="filter-select" id="filterSort" onchange="applyFilters()">
+                        <option value="scheduledAt,asc">Time (earliest first)</option>
+                        <option value="scheduledAt,desc">Time (latest first)</option>
+                        <option value="createdAt,desc">Newest created</option>
+                        <option value="title,asc">Title A-Z</option>
+                    </select>
+                </div>
+                <button class="filter-reset-btn" onclick="resetFilters()">Reset</button>
+                <span class="filter-count" id="filterCount"></span>
             </div>
 
             <!-- Meetings list -->
@@ -1286,13 +1510,6 @@
                         <label class="form-label" for="meetingDescription">Description</label>
                         <textarea id="meetingDescription" class="form-textarea" placeholder="Optional meeting description or agenda..." maxlength="2000"></textarea>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label" for="meetingType">Meeting Type</label>
-                        <select id="meetingType" class="form-select">
-                            <option value="GROUP">Group</option>
-                            <option value="ONE_ON_ONE">One-on-One</option>
-                        </select>
-                    </div>
                 </div>
 
                 <!-- Section 2: Schedule -->
@@ -1310,16 +1527,12 @@
                         <span class="form-hint" style="margin:0 0 0 8px">Skip scheduling — meeting starts now</span>
                     </div>
                     <div id="scheduleDateTimeGroup">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label" for="meetingDate">Date</label>
-                            <input type="date" id="meetingDate" class="form-input">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label" for="meetingTime">Time</label>
-                            <input type="time" id="meetingTime" class="form-input">
-                        </div>
+                    <input type="hidden" id="meetingDate">
+                    <div class="selected-date-display" id="selectedDateDisplay">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;color:var(--primary);flex-shrink:0"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        <span id="selectedDateText">Select a date from the calendar</span>
                     </div>
+                    <input type="hidden" id="meetingTime">
                     </div>
                     <div class="form-row">
                         <div class="form-group">
@@ -1816,6 +2029,13 @@
             }
         })();
 
+        // ---- Time picker state (calendar-style grid) ----
+        // calendarMode: 'date' | 'hour' | 'minute'
+        var calendarMode = 'date';
+        var tpHour24 = null;   // 0-23
+        var tpMinute = null;   // 0,15,30,45
+        var pendingHour24 = null; // hour selected but minute not yet chosen
+
         // ---- Set initial date/time ----
         (function setDefaults() {
             var now = new Date();
@@ -1824,12 +2044,171 @@
             var dateStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
             var timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
             document.getElementById('meetingDate').value = dateStr;
-            document.getElementById('meetingDate').min = dateStr;
-            document.getElementById('meetingTime').value = timeStr;
             selectedDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
             calendarDate = new Date(now.getFullYear(), now.getMonth(), 1);
+            updateSelectedDateDisplay();
+
+            // ---- Timepicker init ----
+            initTimepicker();
+            setTimepickerFrom24(timeStr);
+
             updateSummary();
         })();
+
+        // ---- Time picker (calendar-style grid) ----
+        function initTimepicker() {
+            // no-op: time picker is now integrated into the calendar
+        }
+
+        function setTimepickerFrom24(timeStr) {
+            var parts = timeStr.split(':');
+            var h = parseInt(parts[0]);
+            var m = parseInt(parts[1]);
+            // Round minute to nearest 15
+            m = Math.round(m / 15) * 15;
+            if (m === 60) { m = 0; h = (h + 1) % 24; }
+            tpHour24 = h;
+            tpMinute = m;
+            document.getElementById('meetingTime').value = String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+            calendarMode = 'date';
+            renderCalendar();
+            updateSummary();
+        }
+
+        function showHourPicker() {
+            calendarMode = 'hour';
+            renderCalendar();
+        }
+
+        function showMinutePicker(hour24) {
+            pendingHour24 = hour24;
+            calendarMode = 'minute';
+            renderCalendar();
+        }
+
+        function commitTime(hour24, minute) {
+            tpHour24 = hour24;
+            tpMinute = minute;
+            pendingHour24 = null;
+            document.getElementById('meetingTime').value = String(hour24).padStart(2, '0') + ':' + String(minute).padStart(2, '0');
+            calendarMode = 'date';
+            renderCalendar();
+            updateSummary();
+        }
+
+        function renderHourPicker(container) {
+            // Nav bar
+            var nav = document.createElement('div');
+            nav.className = 'calendar-nav';
+
+            var backBtn = document.createElement('button');
+            backBtn.className = 'calendar-back-btn';
+            backBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>';
+            backBtn.addEventListener('click', function() {
+                calendarMode = 'date';
+                renderCalendar();
+            });
+
+            var title = document.createElement('span');
+            title.className = 'calendar-nav-title';
+            title.textContent = 'Select Hour';
+
+            // Empty spacer to balance layout
+            var spacer = document.createElement('div');
+            spacer.style.width = '32px';
+
+            nav.appendChild(backBtn);
+            nav.appendChild(title);
+            nav.appendChild(spacer);
+            container.appendChild(nav);
+
+            // Hour grid: 8 AM to 9 PM (common meeting hours)
+            var grid = document.createElement('div');
+            grid.className = 'time-grid';
+
+            var hours = [8,9,10,11,12,13,14,15,16,17,18,19,20,21];
+            for (var i = 0; i < hours.length; i++) {
+                var h = hours[i];
+                var btn = document.createElement('button');
+                btn.className = 'time-grid-cell';
+                // Format as 12-hour
+                var ampm = h >= 12 ? 'PM' : 'AM';
+                var h12 = h % 12 || 12;
+                btn.textContent = h12 + ' ' + ampm;
+                if (tpHour24 === h) {
+                    btn.classList.add('selected');
+                }
+                btn.setAttribute('data-hour', String(h));
+                btn.addEventListener('click', function() {
+                    var hour = parseInt(this.getAttribute('data-hour'));
+                    showMinutePicker(hour);
+                });
+                grid.appendChild(btn);
+            }
+
+            container.appendChild(grid);
+
+            // Show currently selected time if any
+            if (tpHour24 !== null && tpMinute !== null) {
+                var info = document.createElement('div');
+                info.className = 'time-selected-info';
+                info.innerHTML = 'Current: <strong>' + formatTime12(tpHour24, tpMinute) + '</strong>';
+                container.appendChild(info);
+            }
+        }
+
+        function renderMinutePicker(container) {
+            var hour24 = pendingHour24;
+
+            // Nav bar
+            var nav = document.createElement('div');
+            nav.className = 'calendar-nav';
+
+            var backBtn = document.createElement('button');
+            backBtn.className = 'calendar-back-btn';
+            backBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>';
+            backBtn.addEventListener('click', function() {
+                calendarMode = 'hour';
+                renderCalendar();
+            });
+
+            var title = document.createElement('span');
+            title.className = 'calendar-nav-title';
+            var ampm = hour24 >= 12 ? 'PM' : 'AM';
+            var h12 = hour24 % 12 || 12;
+            title.textContent = h12 + ' ' + ampm + ' \u2014 Select Minutes';
+
+            var spacer = document.createElement('div');
+            spacer.style.width = '32px';
+
+            nav.appendChild(backBtn);
+            nav.appendChild(title);
+            nav.appendChild(spacer);
+            container.appendChild(nav);
+
+            // Minute grid: :00, :15, :30, :45
+            var grid = document.createElement('div');
+            grid.className = 'minute-grid';
+
+            var minutes = [0, 15, 30, 45];
+            for (var i = 0; i < minutes.length; i++) {
+                var m = minutes[i];
+                var btn = document.createElement('button');
+                btn.className = 'minute-grid-cell';
+                btn.textContent = ':' + String(m).padStart(2, '0');
+                if (tpHour24 === hour24 && tpMinute === m) {
+                    btn.classList.add('selected');
+                }
+                btn.setAttribute('data-minute', String(m));
+                btn.addEventListener('click', function() {
+                    var min = parseInt(this.getAttribute('data-minute'));
+                    commitTime(hour24, min);
+                });
+                grid.appendChild(btn);
+            }
+
+            container.appendChild(grid);
+        }
 
         // ---- Duration custom toggle ----
         document.getElementById('meetingDuration').addEventListener('change', function() {
@@ -1843,11 +2222,11 @@
             if (parts.length === 3) {
                 selectedDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
                 calendarDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, 1);
+                updateSelectedDateDisplay();
                 renderCalendar();
             }
             updateSummary();
         });
-        document.getElementById('meetingTime').addEventListener('change', updateSummary);
 
         // ---- Access toggle ----
         window.setAccess = function(pub) {
@@ -2006,6 +2385,23 @@
             return hh + ':' + String(m).padStart(2, '0') + ' ' + ampm;
         }
 
+        function updateSelectedDateDisplay() {
+            var dateVal = document.getElementById('meetingDate').value;
+            var el = document.getElementById('selectedDateText');
+            var wrap = document.getElementById('selectedDateDisplay');
+            if (dateVal) {
+                var parts = dateVal.split('-');
+                var d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+                var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+                var days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+                el.textContent = days[d.getDay()] + ', ' + months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+                wrap.classList.add('has-date');
+            } else {
+                el.textContent = 'Select a date from the calendar';
+                wrap.classList.remove('has-date');
+            }
+        }
+
         function updateSummary() {
             var dateVal = document.getElementById('meetingDate').value;
             var timeVal = document.getElementById('meetingTime').value;
@@ -2061,6 +2457,16 @@
         function renderCalendar() {
             var container = document.getElementById('miniCalendar');
             container.innerHTML = '';
+
+            // Dispatch to time picker modes
+            if (calendarMode === 'hour') {
+                renderHourPicker(container);
+                return;
+            }
+            if (calendarMode === 'minute') {
+                renderMinutePicker(container);
+                return;
+            }
 
             var year = calendarDate.getFullYear();
             var month = calendarDate.getMonth();
@@ -2150,8 +2556,10 @@
                         selectedDate = new Date(year, month, day);
                         var dateStr = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
                         document.getElementById('meetingDate').value = dateStr;
-                        renderCalendar();
+                        updateSelectedDateDisplay();
                         updateSummary();
+                        // Transition to hour picker
+                        showHourPicker();
                     });
                 }
 
@@ -2170,6 +2578,16 @@
             }
 
             container.appendChild(grid);
+
+            // Show selected date+time below calendar if time is set
+            if (selectedDate && tpHour24 !== null && tpMinute !== null) {
+                var info = document.createElement('div');
+                info.className = 'time-selected-info';
+                info.style.marginTop = '12px';
+                var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                info.innerHTML = 'Selected: <strong>' + months[selectedDate.getMonth()] + ' ' + selectedDate.getDate() + ' at ' + formatTime12(tpHour24, tpMinute) + '</strong>';
+                container.appendChild(info);
+            }
         }
 
         renderCalendar();
@@ -2216,7 +2634,6 @@
             createBtn.innerHTML = '<span class="spinner-small"></span> Creating...';
 
             var duration = getDurationMinutes();
-            var actualType = document.getElementById('meetingType').value;
             var actualPublic = isPublic;
 
             var scheduledAt = isInstant ? null : (dateVal + 'T' + timeVal + ':00');
@@ -2226,7 +2643,6 @@
             var body = {
                 title: titleVal,
                 description: document.getElementById('meetingDescription').value.trim() || null,
-                meetingType: actualType,
                 scheduledAt: scheduledAt,
                 maxParticipants: isNaN(maxParticipants) ? null : maxParticipants,
                 isPublic: actualPublic,
@@ -2347,7 +2763,6 @@
             // Reset form
             document.getElementById('meetingTitle').value = '';
             document.getElementById('meetingDescription').value = '';
-            document.getElementById('meetingType').value = 'GROUP';
             participants = [];
             renderParticipants();
             setAccess(true);
@@ -2375,7 +2790,7 @@
             var dateStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
             var timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
             document.getElementById('meetingDate').value = dateStr;
-            document.getElementById('meetingTime').value = timeStr;
+            setTimepickerFrom24(timeStr);
             document.getElementById('meetingDuration').value = '60';
             document.getElementById('customDurationGroup').style.display = 'none';
 
@@ -2438,10 +2853,56 @@
         // ---- Meetings List ----
         var allMeetings = [];
         var meetingsLoaded = false;
-        var currentFilter = 'all';
         var meetingsPage = 0;
         var meetingsPageSize = 20;
         var hasMoreMeetings = false;
+
+        function formatDateParam(d) {
+            return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        }
+
+        function getDateFilterParams() {
+            var dateFilter = document.getElementById('filterDate').value;
+            var today = new Date();
+
+            if (dateFilter === 'today') {
+                var s = formatDateParam(today);
+                return '&dateFrom=' + s + '&dateTo=' + s;
+            } else if (dateFilter === 'week') {
+                var dow = today.getDay();
+                var mon = new Date(today);
+                mon.setDate(today.getDate() - (dow === 0 ? 6 : dow - 1));
+                var sun = new Date(mon);
+                sun.setDate(mon.getDate() + 6);
+                return '&dateFrom=' + formatDateParam(mon) + '&dateTo=' + formatDateParam(sun);
+            } else if (dateFilter === 'month') {
+                var first = new Date(today.getFullYear(), today.getMonth(), 1);
+                var last = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+                return '&dateFrom=' + formatDateParam(first) + '&dateTo=' + formatDateParam(last);
+            }
+            return '';
+        }
+
+        function buildMeetingsUrl(page) {
+            var sortVal = document.getElementById('filterSort').value;
+            var url = MEETING_URL + '/meetings/my?page=' + page + '&size=' + meetingsPageSize + '&sort=' + sortVal;
+            var status = document.getElementById('filterStatus').value;
+            if (status) url += '&status=' + status;
+            url += getDateFilterParams();
+            return url;
+        }
+
+        window.applyFilters = function() {
+            meetingsLoaded = false;
+            loadMyMeetings();
+        };
+
+        window.resetFilters = function() {
+            document.getElementById('filterStatus').value = '';
+            document.getElementById('filterDate').value = 'today';
+            document.getElementById('filterSort').value = 'scheduledAt,asc';
+            applyFilters();
+        };
 
         window.loadMyMeetings = async function() {
             var token = await getValidToken();
@@ -2452,7 +2913,7 @@
             document.getElementById('meetingsList').innerHTML = '';
 
             try {
-                var resp = await fetch(MEETING_URL + '/meetings/my?page=0&size=' + meetingsPageSize + '&sort=createdAt,desc', {
+                var resp = await fetch(buildMeetingsUrl(0), {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
 
@@ -2469,6 +2930,7 @@
                 meetingsLoaded = true;
 
                 document.getElementById('meetingsLoading').style.display = 'none';
+                document.getElementById('filterCount').textContent = allMeetings.length + (hasMoreMeetings ? '+' : '') + ' meeting' + (allMeetings.length !== 1 ? 's' : '');
                 renderMeetingsList();
             } catch (e) {
                 document.getElementById('meetingsLoading').style.display = 'none';
@@ -2482,13 +2944,14 @@
 
             meetingsPage++;
             try {
-                var resp = await fetch(MEETING_URL + '/meetings/my?page=' + meetingsPage + '&size=' + meetingsPageSize + '&sort=createdAt,desc', {
+                var resp = await fetch(buildMeetingsUrl(meetingsPage), {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
                 if (resp.ok) {
                     var data = await resp.json();
                     allMeetings = allMeetings.concat(data.content || []);
                     hasMoreMeetings = !data.last;
+                    document.getElementById('filterCount').textContent = allMeetings.length + (hasMoreMeetings ? '+' : '') + ' meeting' + (allMeetings.length !== 1 ? 's' : '');
                     renderMeetingsList();
                 }
             } catch (e) {
@@ -2496,24 +2959,12 @@
             }
         };
 
-        window.filterMeetings = function(filter) {
-            currentFilter = filter;
-            document.querySelectorAll('.filter-btn').forEach(function(btn) {
-                btn.classList.toggle('active', btn.getAttribute('data-filter') === filter);
-            });
-            renderMeetingsList();
-        };
-
         function renderMeetingsList() {
             var container = document.getElementById('meetingsList');
             var emptyEl = document.getElementById('meetingsEmpty');
             var paginationEl = document.getElementById('meetingsPagination');
 
-            var filtered = currentFilter === 'all'
-                ? allMeetings
-                : allMeetings.filter(function(m) { return m.status === currentFilter; });
-
-            if (filtered.length === 0) {
+            if (allMeetings.length === 0) {
                 container.innerHTML = '';
                 emptyEl.style.display = '';
                 paginationEl.style.display = 'none';
@@ -2523,7 +2974,7 @@
             emptyEl.style.display = 'none';
             container.innerHTML = '';
 
-            filtered.forEach(function(m) {
+            allMeetings.forEach(function(m) {
                 var card = document.createElement('div');
                 card.className = 'meeting-card';
                 card.innerHTML = buildMeetingCardHtml(m);
@@ -2548,8 +2999,7 @@
             }
 
             var durationStr = m.durationMinutes ? formatDuration(m.durationMinutes) : '--';
-            var typeStr = (m.meetingType || '').replace('_', '-');
-            var participantCount = m.participants ? m.participants.length : 0;
+            var participantCount = m.totalParticipantCount || (m.participants ? m.participants.length : 0);
 
             var meetingUrl = window.location.origin + '/' + (m.roomName || '');
             var joinUrl = escapeHtml(meetingUrl);
@@ -2572,7 +3022,7 @@
                 + '<div class="meeting-card-meta">'
                 + '<div class="meeting-card-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span>' + escapeHtml(dateStr) + '</span></div>'
                 + '<div class="meeting-card-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>' + escapeHtml(durationStr) + '</span> ' + accessBadge + '</div>'
-                + '<div class="meeting-card-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><span>' + participantCount + ' participant' + (participantCount !== 1 ? 's' : '') + '</span> <span style="margin-left:4px;font-size:11px;color:#94a3b8">' + escapeHtml(typeStr) + '</span></div>'
+                + '<div class="meeting-card-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><span>' + participantCount + ' participant' + (participantCount !== 1 ? 's' : '') + '</span></div>'
                 + '</div>'
                 + '<div class="meeting-card-actions">' + actions + '</div>';
         }

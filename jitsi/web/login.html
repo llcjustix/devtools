@@ -890,10 +890,7 @@
                     loading.style.display = 'none';
                     successState.style.display = 'block';
 
-                    setTimeout(() => {
-                        document.body.classList.add('fade-out');
-                        setTimeout(() => { window.location.href = getRedirectUrl(); }, 400);
-                    }, 800);
+                    window.location.href = getRedirectUrl();
                 } else if (response.status === 401 || response.status === 403) {
                     // Invalid credentials
                     throw new Error('Invalid email or password. Please try again.');

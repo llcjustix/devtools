@@ -1,152 +1,72 @@
 /* LearnX Meets - Custom Styles */
-/* Light purple brand theme inspired by Google Meet's clean design */
+/* Minimal overrides: only brand colors + button styling */
+/* RULE: Never override layout (display, flex, position, width, height) on Jitsi elements */
 
 :root {
     --lx-primary: #7c3aed;
     --lx-primary-light: #9b6dff;
     --lx-primary-dark: #6d28d9;
-    --lx-primary-bg: #f5f0ff;
-    --lx-surface: #faf8ff;
-    --lx-text: #1f1f1f;
-    --lx-text-muted: #6b7280;
     --lx-danger: #dc2626;
     --lx-danger-dark: #b91c1c;
     --lx-warning: #f59e0b;
-    --lx-success: #059669;
 }
 
 /* ========================================
-   TOOLBAR BUTTONS - Clean Google Meet style
+   TOOLBAR - Modern material design buttons
    ======================================== */
 
-/* Default toolbar buttons - round, smooth transitions */
-div[class*="Toolbox"] button,
-.toolbox-button,
-button[class*="toolbox-button"] {
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
-    border-radius: 50% !important;
-    position: relative;
+/* Toolbar wrapper - glass morphism background */
+.toolbox-content-wrapper {
+    background: rgba(32, 33, 36, 0.85) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    border-radius: 16px !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
+    padding: 4px !important;
 }
 
-/* Ripple-like focus ring */
-div[class*="Toolbox"] button:focus-visible {
-    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.3) !important;
-    outline: none !important;
+/* All toolbar buttons - rounded material style */
+.toolbox-icon {
+    border-radius: 12px !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
-/* Inactive state - soft neutral */
-div[class*="Toolbox"] button:not(.toggled):not([class*="active"]):not([class*="muted"]):not([class*="disabled"]) {
-    background-color: rgba(255, 255, 255, 0.12) !important;
+.toolbox-icon:hover {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border-radius: 12px !important;
 }
 
-/* Active/Enabled state - Purple (video/audio is ON) */
-div[class*="Toolbox"] button.toggled,
-div[class*="Toolbox"] button[class*="active"],
-button[data-testid*="mute"]:not([class*="muted"]),
-button[data-testid*="video"]:not([class*="muted"]),
-button[aria-label*="Mute audio"]:not([class*="muted"]),
-button[aria-label*="Stop camera"]:not([class*="muted"]) {
-    background-color: var(--lx-primary) !important;
+/* Toggled state (active buttons like muted mic/camera) */
+.toolbox-icon.toggled {
+    background: rgba(255, 255, 255, 0.15) !important;
+    border-radius: 12px !important;
 }
 
-/* Muted/Disabled state - Red (video/audio is OFF) */
-div[class*="Toolbox"] button[class*="muted"],
-div[class*="Toolbox"] button[class*="disabled"],
-button[data-testid*="mute"][class*="muted"],
-button[data-testid*="video"][class*="muted"],
-button[aria-label*="Unmute audio"],
-button[class*="audio"][class*="muted"],
-button[aria-label*="Start camera"],
-button[class*="video"][class*="muted"],
-.audio-preview button[aria-label*="Muted"],
-.video-preview button[aria-label*="Stop"] {
-    background-color: var(--lx-danger) !important;
-}
-
-/* Hover states - lift + glow */
-div[class*="Toolbox"] button:hover {
-    opacity: 0.92 !important;
-    transform: scale(1.08) translateY(-2px) !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
-}
-div[class*="Toolbox"] button[class*="muted"]:hover,
-div[class*="Toolbox"] button[class*="disabled"]:hover {
-    background-color: var(--lx-danger-dark) !important;
-    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3) !important;
-}
-
-/* Active press - squish */
-div[class*="Toolbox"] button:active,
-button[class*="toolbox-button"]:active {
-    background-color: var(--lx-primary-dark) !important;
-    transform: scale(0.92) !important;
-    transition-duration: 0.08s !important;
+.toolbox-icon.toggled:hover {
+    background: rgba(255, 255, 255, 0.22) !important;
 }
 
 /* ========================================
    HANGUP BUTTON - Red pill shape
    ======================================== */
 
-button[aria-label*="Leave"],
-button[aria-label*="Hang up"],
-button[data-testid*="hangup"],
-div[class*="hangup"] button {
+button[data-testid*="hangup"] {
     background-color: var(--lx-danger) !important;
     border-radius: 24px !important;
-    padding: 0 24px !important;
-    min-width: 56px;
+    transition: all 0.2s ease !important;
 }
-button[aria-label*="Leave"]:hover,
-button[aria-label*="Hang up"]:hover,
-button[data-testid*="hangup"]:hover,
-div[class*="hangup"] button:hover {
+button[data-testid*="hangup"]:hover {
     background-color: var(--lx-danger-dark) !important;
     box-shadow: 0 4px 16px rgba(220, 38, 38, 0.4) !important;
-    transform: scale(1.05) translateY(-2px) !important;
-}
-
-/* ========================================
-   PRIMARY BUTTONS (Join, Start, etc.)
-   ======================================== */
-
-button.primary,
-.button-primary,
-[class*="PrimaryButton"],
-[class*="prejoin"] button[class*="primary"],
-[class*="ActionButton"] {
-    background-color: var(--lx-primary) !important;
-    border-color: var(--lx-primary) !important;
-    border-radius: 24px !important;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-    position: relative;
-    overflow: hidden;
-}
-
-button.primary:hover,
-.button-primary:hover,
-[class*="PrimaryButton"]:hover,
-[class*="prejoin"] button[class*="primary"]:hover,
-[class*="ActionButton"]:hover {
-    background-color: var(--lx-primary-dark) !important;
-    box-shadow: 0 6px 20px rgba(124, 58, 237, 0.35) !important;
-    transform: translateY(-2px) !important;
-}
-
-button.primary:active,
-.button-primary:active,
-[class*="PrimaryButton"]:active,
-[class*="ActionButton"]:active {
-    transform: translateY(0) scale(0.98) !important;
-    transition-duration: 0.1s !important;
 }
 
 /* ========================================
    SPECIAL BUTTON STATES
    ======================================== */
 
-/* Raise hand - amber with bounce */
-button[aria-label*="Lower hand"],
-button[class*="raisehand"][class*="toggled"] {
+/* Raise hand - amber pulse */
+button[aria-label*="Lower hand"] {
     background-color: var(--lx-warning) !important;
     animation: raiseHandPulse 1.5s ease-in-out infinite !important;
 }
@@ -155,459 +75,108 @@ button[class*="raisehand"][class*="toggled"] {
     50% { box-shadow: 0 0 0 8px rgba(245, 158, 11, 0); }
 }
 
-/* Share screen active - purple glow */
-button[aria-label*="Stop sharing"],
-button[class*="desktop"][class*="toggled"] {
-    background-color: var(--lx-primary-dark) !important;
-    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2) !important;
-}
-
-/* Chat / Participants active */
-button[class*="chat-counter"],
-button[class*="participants-pane"] {
-    background-color: var(--lx-primary) !important;
-}
-
-/* Reactions active */
-button[class*="reactions"][class*="toggled"] {
-    background-color: var(--lx-primary-dark) !important;
-}
-
-/* ========================================
-   PREJOIN / LOBBY SCREEN
-   ======================================== */
-
-[class*="prejoin"] {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
-}
-
-/* Prejoin container - subtle entrance animation */
-[class*="prejoin-preview"],
-[class*="premeeting-screen"] {
-    animation: prejoinFadeIn 0.5s ease !important;
-}
-@keyframes prejoinFadeIn {
-    from { opacity: 0; transform: scale(0.97); }
-    to { opacity: 1; transform: scale(1); }
-}
-
-/* Prejoin input fields */
-[class*="prejoin"] input[type="text"],
-[class*="prejoin"] input[name="displayname"] {
-    border-radius: 12px !important;
-    border: 1.5px solid #e5ddf5 !important;
-    padding: 12px 16px !important;
-    transition: border-color 0.2s, box-shadow 0.2s !important;
-}
-[class*="prejoin"] input:focus {
-    border-color: var(--lx-primary) !important;
-    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1) !important;
-}
-
-/* ========================================
-   NOTIFICATIONS & TOASTS
-   ======================================== */
-
-[class*="oticeable"],
-[class*="oticeable"] {
-    color: var(--lx-primary) !important;
-}
-
-/* Toast notifications - slide in animation */
-[class*="notification"],
-[class*="Notification"] {
-    animation: notifSlideIn 0.35s cubic-bezier(0.4, 0, 0.2, 1) !important;
-    border-radius: 12px !important;
-}
-@keyframes notifSlideIn {
-    from { opacity: 0; transform: translateX(100%); }
-    to { opacity: 1; transform: translateX(0); }
-}
-
-/* ========================================
-   CHAT PANEL
-   ======================================== */
-
-/* Chat messages - stagger animation */
-[class*="chatMessageGroup"] {
-    animation: chatMsgIn 0.3s ease !important;
-}
-@keyframes chatMsgIn {
-    from { opacity: 0; transform: translateY(8px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-/* Chat send button */
-[class*="chat"] button[type="submit"],
-[class*="chat-input"] button {
-    background-color: var(--lx-primary) !important;
-    border-radius: 50% !important;
-    transition: all 0.2s ease !important;
-}
-[class*="chat"] button[type="submit"]:hover,
-[class*="chat-input"] button:hover {
-    background-color: var(--lx-primary-dark) !important;
-    transform: scale(1.1) !important;
-}
-
-/* ========================================
-   PARTICIPANTS PANEL
-   ======================================== */
-
-[class*="participants-pane"] [class*="participant-item"]:hover,
-[class*="MeetingParticipantItem"]:hover {
-    background-color: var(--lx-primary-bg) !important;
-    border-radius: 10px !important;
-}
-
-/* ========================================
-   SIDE PANELS (Chat, Participants, etc.)
-   ======================================== */
-
-[class*="side-panel"],
-[class*="SidePanel"] {
-    animation: panelSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-}
-@keyframes panelSlideIn {
-    from { opacity: 0; transform: translateX(24px); }
-    to { opacity: 1; transform: translateX(0); }
-}
-
-/* ========================================
-   VIDEO TILES
-   ======================================== */
-
-/* Tile view - subtle entrance */
-[class*="videocontainer"],
-[class*="VideoContainer"] {
-    border-radius: 12px !important;
-    overflow: hidden !important;
-    transition: box-shadow 0.3s ease !important;
-}
-
-/* Speaking indicator glow */
+/* Speaking indicator - purple glow */
 [class*="videocontainer"][class*="speaking"],
 [class*="dominant-speaker"] {
-    box-shadow: 0 0 0 3px var(--lx-primary), 0 0 16px rgba(124, 58, 237, 0.25) !important;
+    box-shadow: 0 0 0 3px var(--lx-primary), 0 0 16px rgba(124, 58, 237, 0.2) !important;
 }
 
 /* ========================================
-   MODALS & DIALOGS
+   PREJOIN SCREEN - Join button styling only
    ======================================== */
 
-[class*="dialog"],
-[class*="Dialog"],
-[class*="modal"] {
-    border-radius: 16px !important;
-    animation: dialogIn 0.25s ease !important;
-}
-@keyframes dialogIn {
-    from { opacity: 0; transform: scale(0.95); }
-    to { opacity: 1; transform: scale(1); }
+@keyframes prejoinShimmer {
+    0% { background-position: -200% center; }
+    100% { background-position: 200% center; }
 }
 
-/* Dialog buttons */
-[class*="dialog"] button[class*="primary"],
-[class*="Dialog"] button[class*="primary"] {
-    background-color: var(--lx-primary) !important;
-    border-radius: 12px !important;
-}
-
-/* ========================================
-   FILMSTRIP (bottom thumbnails)
-   ======================================== */
-
-[class*="filmstrip"] [class*="thumbnail"] {
-    border-radius: 10px !important;
-    transition: all 0.25s ease !important;
-}
-[class*="filmstrip"] [class*="thumbnail"]:hover {
-    transform: scale(1.05) !important;
-    z-index: 1;
-}
-
-/* ========================================
-   LOBBY SCREEN
-   ======================================== */
-
-[class*="lobby-screen"],
-[class*="LobbyScreen"] {
-    animation: lobbyIn 0.6s ease !important;
-}
-@keyframes lobbyIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-/* ========================================
-   GENERAL UI POLISH
-   ======================================== */
-
-/* Smooth transitions everywhere */
-div[class*="Toolbox"] button,
-button[class*="toolbox-button"] {
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
-}
-
-/* Override conflicting Jitsi specificity */
-div[class*="Toolbox"] > * button,
-div[class*="toolbox-content"] button {
-    background-color: inherit !important;
-}
-
-/* Scrollbar styling for panels */
-[class*="side-panel"] *::-webkit-scrollbar,
-[class*="SidePanel"] *::-webkit-scrollbar {
-    width: 6px;
-}
-[class*="side-panel"] *::-webkit-scrollbar-thumb,
-[class*="SidePanel"] *::-webkit-scrollbar-thumb {
-    background: var(--lx-primary-light);
-    border-radius: 3px;
-}
-[class*="side-panel"] *::-webkit-scrollbar-track,
-[class*="SidePanel"] *::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-/* Focus ring global */
-*:focus-visible {
-    outline-color: var(--lx-primary) !important;
-}
-
-/* ========================================
-   MAIN CONFERENCE AREA
-   ======================================== */
-
-/* Conference background - dark with purple tint */
-#largeVideoContainer,
-[id="largeVideoContainer"],
-.large-video-container,
-[class*="LargeVideo"] {
-    background: linear-gradient(135deg, #0f0a1a 0%, #1a1025 50%, #0d0814 100%) !important;
-}
-
-/* Overall conference body */
-body {
-    background: #0f0a1a !important;
-}
-
-/* ========================================
-   TOOLBAR AREA - Frosted glass bar
-   ======================================== */
-
-div[class*="Toolbox"],
-[class*="toolbox-content-wrapper"],
-[class*="new-toolbox"] {
-    background: rgba(15, 10, 26, 0.85) !important;
-    backdrop-filter: blur(20px) !important;
-    -webkit-backdrop-filter: blur(20px) !important;
-    border-top: 1px solid rgba(124, 58, 237, 0.15) !important;
-}
-
-/* Toolbar button base - glass morphism */
-div[class*="Toolbox"] button,
-[class*="toolbox-button"] button {
-    background: rgba(255, 255, 255, 0.08) !important;
-    border: 1px solid rgba(255, 255, 255, 0.06) !important;
-    backdrop-filter: blur(8px) !important;
-    width: 48px !important;
-    height: 48px !important;
-}
-
-/* ========================================
-   HEADER / SUBJECT BAR
-   ======================================== */
-
-[class*="subject-info"],
-[class*="SubjectText"],
-[class*="conference-info"] {
-    background: rgba(15, 10, 26, 0.7) !important;
-    backdrop-filter: blur(12px) !important;
-    border-bottom: 1px solid rgba(124, 58, 237, 0.1) !important;
-    border-radius: 0 0 16px 16px !important;
-}
-
-/* Meeting title text */
-[class*="subject-text"],
-[class*="SubjectText"] span {
-    color: rgba(255, 255, 255, 0.95) !important;
-    font-weight: 600 !important;
-    letter-spacing: 0.01em !important;
-}
-
-/* Timer / Duration display */
-[class*="subject-timer"],
-[class*="Timer"] {
-    color: var(--lx-primary-light) !important;
-    font-weight: 500 !important;
-}
-
-/* ========================================
-   VIDEO TILES - Enhanced
-   ======================================== */
-
-[class*="videocontainer"],
-[class*="VideoContainer"],
-[class*="Thumbnail"] {
-    border-radius: 16px !important;
-    overflow: hidden !important;
-    border: 1px solid rgba(124, 58, 237, 0.08) !important;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-}
-
-/* Active speaker highlight - purple glow */
-[class*="videocontainer"][class*="speaking"],
-[class*="dominant-speaker"],
-[class*="activeSpeaker"] {
-    box-shadow: 0 0 0 2px var(--lx-primary), 0 0 24px rgba(124, 58, 237, 0.3) !important;
-    border-color: var(--lx-primary) !important;
-}
-
-/* Display name badge on tiles */
-[class*="display-name"],
-[class*="DisplayName"] {
-    background: rgba(15, 10, 26, 0.7) !important;
-    backdrop-filter: blur(8px) !important;
-    border-radius: 8px !important;
-    padding: 4px 10px !important;
-    font-size: 12px !important;
-    font-weight: 500 !important;
-}
-
-/* ========================================
-   SIDE PANELS - Frosted glass
-   ======================================== */
-
-[class*="side-panel"],
-[class*="SidePanel"],
-[class*="participants_pane"],
-[class*="chat-panel"] {
-    background: rgba(15, 10, 26, 0.92) !important;
-    backdrop-filter: blur(24px) !important;
-    border-left: 1px solid rgba(124, 58, 237, 0.12) !important;
-}
-
-/* Panel headers */
-[class*="side-panel"] [class*="header"],
-[class*="SidePanel"] [class*="Header"] {
-    border-bottom: 1px solid rgba(124, 58, 237, 0.1) !important;
-}
-
-/* ========================================
-   CHAT ENHANCEMENTS
-   ======================================== */
-
-/* Chat input area */
-[class*="chat-input"],
-[class*="ChatInput"] {
-    background: rgba(255, 255, 255, 0.06) !important;
-    border: 1px solid rgba(124, 58, 237, 0.15) !important;
-    border-radius: 12px !important;
-}
-
-[class*="chat-input"] textarea,
-[class*="ChatInput"] textarea {
-    color: rgba(255, 255, 255, 0.9) !important;
-}
-
-/* Chat messages */
-[class*="chatMessageGroup"] [class*="message"],
-[class*="ChatMessage"] {
-    background: rgba(124, 58, 237, 0.08) !important;
-    border-radius: 12px !important;
-    border: 1px solid rgba(124, 58, 237, 0.06) !important;
-}
-
-/* ========================================
-   NOTIFICATIONS - Purple accent
-   ======================================== */
-
-[class*="notification"],
-[class*="Notification"] {
-    background: rgba(15, 10, 26, 0.9) !important;
-    backdrop-filter: blur(16px) !important;
-    border: 1px solid rgba(124, 58, 237, 0.2) !important;
-    border-radius: 14px !important;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
-}
-
-/* ========================================
-   PREJOIN SCREEN - LearnX branded
-   ======================================== */
-
-[class*="prejoin"],
-[class*="premeeting"] {
-    background: linear-gradient(135deg, #0f0a1a 0%, #1a1025 100%) !important;
-}
-
-/* Prejoin join button */
-[class*="prejoin"] button[class*="primary"],
-[class*="ActionButton"][class*="primary"] {
+/* JOIN BUTTON: light purple gradient + shimmer */
+[data-testid="prejoin.joinMeeting"] {
     background: linear-gradient(135deg, #9b6dff, #7c3aed) !important;
     border: none !important;
-    border-radius: 24px !important;
-    padding: 14px 32px !important;
-    font-size: 15px !important;
-    font-weight: 600 !important;
-    letter-spacing: 0.02em !important;
+    border-radius: 14px !important;
     box-shadow: 0 4px 16px rgba(124, 58, 237, 0.35) !important;
-    transition: all 0.3s ease !important;
-}
-
-[class*="prejoin"] button[class*="primary"]:hover,
-[class*="ActionButton"][class*="primary"]:hover {
-    box-shadow: 0 6px 24px rgba(124, 58, 237, 0.5) !important;
-    transform: translateY(-2px) !important;
-}
-
-/* Prejoin video preview */
-[class*="prejoin-preview"],
-[class*="premeeting-screen"] {
-    border-radius: 20px !important;
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1) !important;
     overflow: hidden !important;
-    border: 1px solid rgba(124, 58, 237, 0.15) !important;
-}
-
-/* ========================================
-   MODALS / DIALOGS - Glass effect
-   ======================================== */
-
-[class*="dialog"],
-[class*="Dialog"],
-[class*="modal"],
-[class*="Modal"] {
-    background: rgba(20, 15, 30, 0.95) !important;
-    backdrop-filter: blur(24px) !important;
-    border: 1px solid rgba(124, 58, 237, 0.15) !important;
-    border-radius: 20px !important;
-    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.4) !important;
-}
-
-/* Dialog overlay */
-[class*="dialog-overlay"],
-[class*="DialogPortal"] > div:first-child {
-    background: rgba(0, 0, 0, 0.6) !important;
-    backdrop-filter: blur(4px) !important;
-}
-
-/* ========================================
-   LOBBY SCREEN - Enhanced
-   ======================================== */
-
-[class*="lobby-screen"],
-[class*="LobbyScreen"] {
-    background: linear-gradient(135deg, #0f0a1a, #1a1025) !important;
-}
-
-[class*="lobby-screen"] [class*="title"],
-[class*="LobbyScreen"] h2 {
     color: white !important;
-    font-weight: 700 !important;
+}
+
+/* Shimmer animation overlay */
+[data-testid="prejoin.joinMeeting"]::before {
+    content: '' !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.15) 40%,
+        rgba(255, 255, 255, 0.3) 50%,
+        rgba(255, 255, 255, 0.15) 60%,
+        transparent 100%
+    ) !important;
+    background-size: 200% 100% !important;
+    animation: prejoinShimmer 3s ease infinite !important;
+    pointer-events: none !important;
+    border-radius: 14px !important;
+    z-index: 1 !important;
+}
+
+[data-testid="prejoin.joinMeeting"]:hover {
+    box-shadow: 0 6px 28px rgba(124, 58, 237, 0.5) !important;
+}
+
+/* Join options dropdown arrow - match button style */
+[data-testid="prejoin.joinOptions"] {
+    background: linear-gradient(135deg, #8b5cf6, #6d28d9) !important;
+    border: none !important;
+    border-radius: 0 14px 14px 0 !important;
+    color: white !important;
+}
+
+/* Prejoin name input - subtle purple focus */
+.premeeting-name-input input {
+    border-radius: 12px !important;
+}
+.premeeting-name-input input:focus {
+    border-color: var(--lx-primary) !important;
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15) !important;
 }
 
 /* ========================================
-   WATERMARK / BRANDING
+   MAIN BACKGROUND - match tile view gray
+   ======================================== */
+
+#largeVideoContainer,
+[id="largeVideoContainer"],
+.large-video-container {
+    background: #292929 !important;
+}
+
+/* ========================================
+   DEVICE SELECTION POPOVERS - wider, modern
+   ======================================== */
+
+.popover-content {
+    min-width: 320px !important;
+    border-radius: 12px !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* ========================================
+   REACTIONS ROW - always visible above toolbar
+   ======================================== */
+
+[class*="reactions-menu"] {
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+
+/* ========================================
+   WATERMARK
    ======================================== */
 
 [class*="watermark"],
