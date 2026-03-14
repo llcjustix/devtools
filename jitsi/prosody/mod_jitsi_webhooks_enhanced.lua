@@ -16,7 +16,7 @@ local function get_room_name(room_jid)
 end
 
 -- Configuration from environment variables or Prosody config
-local meeting_service_url = os.getenv("MEETING_SERVICE_URL") or module:get_option_string("meeting_service_url", "http://localhost:2031")
+local meeting_service_url = os.getenv("MEETING_SERVICE_URL") or module:get_option_string("meeting_service_url", "http://host.docker.internal:2022/meeting-service")
 local webhook_base_url = meeting_service_url .. "/webhooks/jitsi"
 local webhook_secret = os.getenv("JITSI_WEBHOOK_SECRET") or module:get_option_string("jitsi_webhook_secret", "")
 

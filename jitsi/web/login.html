@@ -744,34 +744,46 @@
 
     <script>
         // ── Service URL detection ──
-        const getAuthServiceUrl = () => {
-            if (window.AUTH_SERVICE_URL) return window.AUTH_SERVICE_URL;
+        const getGatewayBase = () => {
             const h = window.location.hostname;
-            if (h === 'localhost' || h === '127.0.0.1') return 'http://localhost:2025';
-            if (h === 'host.docker.internal') return 'http://host.docker.internal:2025';
             return window.location.protocol + '//' + h.replace('meet.', '');
         };
-
+        const getAuthServiceUrl = () => {
+            if (window.AUTH_SERVICE_URL) return window.AUTH_SERVICE_URL;
+            return getGatewayBase() + '/auth-service';
+        };
         const getMeetingServiceUrl = () => {
             if (window.MEETING_SERVICE_URL) return window.MEETING_SERVICE_URL;
-            const h = window.location.hostname;
-            if (h === 'localhost' || h === '127.0.0.1') return 'http://localhost:2031';
-            if (h === 'host.docker.internal') return 'http://host.docker.internal:2031';
-            return window.location.protocol + '//' + h.replace('meet.', '');
+            return getGatewayBase() + '/meeting-service';
         };
 
         const authServiceUrl = getAuthServiceUrl();
         const meetingServiceUrl = getMeetingServiceUrl();
+
+        // Token storage key names (configurable via window env)
+        const TOKEN_KEY = window.LEARNX_TOKEN_KEY || 'learnx_access_token';
+        const REFRESH_KEY = window.LEARNX_REFRESH_KEY || 'learnx_refresh_token';
 
         // ── URL parameters ──
         const urlParams = new URLSearchParams(window.location.search);
         const roomName = urlParams.get('room');
         const returnUrl = urlParams.get('returnUrl');
 
-        const getRedirectUrl = () => returnUrl || (roomName ? (window.location.origin + '/' + roomName) : '/welcome.html');
+        // Validate returnUrl — only allow same-origin relative paths to prevent open redirect
+        const getRedirectUrl = () => {
+            if (returnUrl) {
+                try {
+                    const parsed = new URL(returnUrl, window.location.origin);
+                    if (parsed.origin === window.location.origin) return parsed.pathname + parsed.search + parsed.hash;
+                } catch (e) {}
+                // If returnUrl starts with / it's relative
+                if (returnUrl.startsWith('/') && !returnUrl.startsWith('//')) return returnUrl;
+            }
+            return roomName ? (window.location.origin + '/' + roomName) : '/welcome.html';
+        };
 
         // ── Token check ──
-        const existingToken = sessionStorage.getItem('learnx_access_token') || localStorage.getItem('learnx_access_token');
+        const existingToken = sessionStorage.getItem(TOKEN_KEY) || localStorage.getItem(TOKEN_KEY);
         if (existingToken) {
             try {
                 const base64 = existingToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
@@ -779,10 +791,10 @@
                 if (payload.exp && (payload.exp * 1000) > Date.now()) {
                     window.location.href = getRedirectUrl();
                 } else {
-                    sessionStorage.removeItem('learnx_access_token');
-                    localStorage.removeItem('learnx_access_token');
-                    sessionStorage.removeItem('learnx_refresh_token');
-                    localStorage.removeItem('learnx_refresh_token');
+                    sessionStorage.removeItem(TOKEN_KEY);
+                    localStorage.removeItem(TOKEN_KEY);
+                    sessionStorage.removeItem(REFRESH_KEY);
+                    localStorage.removeItem(REFRESH_KEY);
                 }
             } catch (e) { /* invalid token, let user login */ }
         }
@@ -867,12 +879,12 @@
                         throw new Error('No token received from authentication service');
                     }
 
-                    sessionStorage.setItem('learnx_access_token', accessToken);
-                    localStorage.setItem('learnx_access_token', accessToken);
+                    sessionStorage.setItem(TOKEN_KEY, accessToken);
+                    localStorage.setItem(TOKEN_KEY, accessToken);
 
                     if (data.refresh_token) {
-                        sessionStorage.setItem('learnx_refresh_token', data.refresh_token);
-                        localStorage.setItem('learnx_refresh_token', data.refresh_token);
+                        sessionStorage.setItem(REFRESH_KEY, data.refresh_token);
+                        localStorage.setItem(REFRESH_KEY, data.refresh_token);
                     }
 
                     loading.style.display = 'none';

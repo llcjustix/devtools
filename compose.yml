@@ -202,7 +202,7 @@ services:
       start_period: 20s
     environment:
       - ENABLE_AUTH=1
-      - ENABLE_GUESTS=0
+      - ENABLE_GUESTS=1
       - AUTH_TYPE=jwt
       - JWT_APP_ID=jitsi
       - JWT_APP_SECRET=${JWT_APP_SECRET}
@@ -219,12 +219,14 @@ services:
       - JIBRI_XMPP_PASSWORD=${JIBRI_XMPP_PASSWORD}
       - TZ=UTC
       # Load custom modules
-      - GLOBAL_MODULES=jitsi_webhooks_enhanced,room_access_validator
-      - XMPP_MUC_MODULES=jitsi_webhooks_enhanced,room_access_validator
-      - GLOBAL_CONFIG=jitsi_webhook_url = "${JITSI_WEBHOOK_URL}"\njitsi_webhook_secret = "${JITSI_WEBHOOK_SECRET}"\nvalidate_access_url = "${JITSI_WEBHOOK_URL}/validate-access"\nwebhook_secret = "${JITSI_WEBHOOK_SECRET}"
+      - GLOBAL_MODULES=jitsi_webhooks_enhanced,room_access_validator,meeting_http_api
+      - XMPP_MUC_MODULES=jitsi_webhooks_enhanced,room_access_validator,token_affiliation,jibri_autostart
+      - GLOBAL_CONFIG=jitsi_webhook_url = "${MEETING_SERVICE_URL}/webhooks/jitsi"\njitsi_webhook_secret = "${JITSI_WEBHOOK_SECRET}"\nvalidate_access_url = "${MEETING_SERVICE_URL}/webhooks/jitsi/validate-access"\nwebhook_secret = "${JITSI_WEBHOOK_SECRET}"
       # Environment variables for custom modules (read by os.getenv)
       - MEETING_SERVICE_URL=${MEETING_SERVICE_URL}
       - JITSI_WEBHOOK_SECRET=${JITSI_WEBHOOK_SECRET}
+    ports:
+      - "5280:5280"   # Prosody HTTP API (for backend destroy-room calls)
     volumes:
       - jitsi-prosody-config:/config
     networks:
@@ -288,8 +290,8 @@ services:
       dockerfile: Dockerfile
       args:
         JITSI_WEB_VERSION: ${JITSI_WEB_VERSION}
-        MEETING_SERVICE_URL: ${MEETING_SERVICE_URL}
-        AUTH_SERVICE_URL: ${AUTH_SERVICE_URL}
+        MEETING_SERVICE_URL: ${BROWSER_MEETING_SERVICE_URL:-http://localhost:2022/meeting-service}
+        AUTH_SERVICE_URL: ${BROWSER_AUTH_SERVICE_URL:-http://localhost:2022/auth-service}
     image: justix/jitsi-web:${JITSI_WEB_VERSION}
     container_name: jitsi-web
     restart: unless-stopped
@@ -298,7 +300,7 @@ services:
       - "8001:80"
     environment:
       - ENABLE_AUTH=1
-      - ENABLE_GUESTS=0
+      - ENABLE_GUESTS=1
       - AUTH_TYPE=jwt
       - JWT_APP_ID=jitsi
       - JWT_APP_SECRET=${JWT_APP_SECRET}
@@ -306,6 +308,7 @@ services:
       - XMPP_DOMAIN=meet.jitsi
       - XMPP_AUTH_DOMAIN=auth.meet.jitsi
       - XMPP_MUC_DOMAIN=muc.meet.jitsi
+      - XMPP_GUEST_DOMAIN=guest.meet.jitsi
       - XMPP_BOSH_URL_BASE=http://jitsi-prosody:5280
       - JICOFO_AUTH_PASSWORD=${JICOFO_AUTH_PASSWORD}
       - PUBLIC_URL=${PUBLIC_URL}
@@ -317,6 +320,9 @@ services:
       - DISABLE_HTTPS=${DISABLE_HTTPS}
       - ENABLE_WELCOME_PAGE=0
       - ENABLE_CLOSE_PAGE=0
+      - MEETING_SERVICE_URL=${MEETING_SERVICE_URL}
+      - WHITEBOARD_ENABLED=1
+      - WHITEBOARD_COLLAB_SERVER_PUBLIC_URL=${WHITEBOARD_COLLAB_SERVER_PUBLIC_URL:-http://localhost:8001/whiteboard}
       - TZ=UTC
     depends_on:
       jitsi-prosody:
@@ -350,8 +356,11 @@ services:
       - JIBRI_LOGS_DIR=/var/log/jibri
       - DISPLAY=:0
       - TZ=UTC
-      # Upload service configuration (for finalize script)
-      - UPLOAD_SERVICE_URL=${JITSI_WEBHOOK_URL}
+      # Finalize script configuration (env vars read by jibri-finalize.sh)
+      - UPLOAD_SERVICE_URL=${MEETING_SERVICE_URL}/webhooks/jitsi
+      - FILE_SERVICE_URL=${JITSI_RECORDING_FILE_SERVICE_URL:-http://host.docker.internal:2022/file-service}
+      - RECORDING_BUCKET=${JITSI_RECORDING_BUCKET:-recordings}
+      - JITSI_WEBHOOK_SECRET=${JITSI_WEBHOOK_SECRET}
     volumes:
       - jitsi-jibri-recordings:/tmp/recordings
       - jitsi-jibri-logs:/var/log/jibri
@@ -365,6 +374,20 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     shm_size: '2gb'
+
+  # Excalidraw collaborative whiteboard backend for Jitsi
+  jitsi-whiteboard:
+    image: jitsi/excalidraw-backend:latest
+    container_name: jitsi-whiteboard
+    restart: unless-stopped
+    environment:
+      - PORT=80
+    depends_on:
+      - jitsi-web
+    networks:
+      infra-network:
+        aliases:
+          - whiteboard.meet.jitsi
 
 #---------------------------------------------- Volumes ---------------------------------------------------------------
 volumes:

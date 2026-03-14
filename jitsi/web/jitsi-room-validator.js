@@ -10,27 +10,27 @@
 
     console.log('[LearnX Room Validator] Initializing room validation...');
 
+    // Token storage key names (configurable via window env)
+    const TOKEN_KEY = window.LEARNX_TOKEN_KEY || 'learnx_access_token';
+    const REFRESH_KEY = window.LEARNX_REFRESH_KEY || 'learnx_refresh_token';
+
     // Get room name from URL (same way Jitsi does)
     const getRoomName = () => {
         const path = window.location.pathname;
-        // Remove leading slash and any trailing slashes
-        return path.substring(1).replace(/\/+$/, '');
+        const name = path.substring(1).replace(/\/+$/, '');
+        // Validate room name: only alphanumeric, hyphens, underscores
+        if (name && !/^[a-zA-Z0-9_-]+$/.test(name)) return null;
+        return name;
     };
 
-    // Meeting service URL detection
-    const getMeetingServiceUrl = () => {
-        if (window.MEETING_SERVICE_URL) {
-            return window.MEETING_SERVICE_URL;
-        }
+    // Service URL detection (via API gateway)
+    const getGatewayBase = () => {
         const hostname = window.location.hostname;
-        if (hostname === 'localhost' || hostname === '127.0.0.1') {
-            return 'http://localhost:2031';
-        }
-        if (hostname === 'host.docker.internal') {
-            return 'http://host.docker.internal:2031';
-        }
-        const protocol = window.location.protocol;
-        return `${protocol}//${hostname.replace('meet.', '')}`;
+        return `${window.location.protocol}//${hostname.replace('meet.', '')}`;
+    };
+    const getMeetingServiceUrl = () => {
+        if (window.MEETING_SERVICE_URL) return window.MEETING_SERVICE_URL;
+        return getGatewayBase() + '/meeting-service';
     };
 
     const roomName = getRoomName();
@@ -99,7 +99,7 @@
 
     // Get JWT token from browser storage (sessionStorage → localStorage fallback)
     const getJwtToken = () => {
-        return sessionStorage.getItem('learnx_access_token') || localStorage.getItem('learnx_access_token');
+        return sessionStorage.getItem(TOKEN_KEY) || localStorage.getItem(TOKEN_KEY);
     };
 
     // Parse JWT payload
@@ -119,24 +119,21 @@
 
     // Clear stored tokens
     const clearToken = () => {
-        sessionStorage.removeItem('learnx_access_token');
-        localStorage.removeItem('learnx_access_token');
-        sessionStorage.removeItem('learnx_refresh_token');
-        localStorage.removeItem('learnx_refresh_token');
+        sessionStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(TOKEN_KEY);
+        sessionStorage.removeItem(REFRESH_KEY);
+        localStorage.removeItem(REFRESH_KEY);
     };
 
     // Get refresh token
     const getRefreshToken = () => {
-        return sessionStorage.getItem('learnx_refresh_token') || localStorage.getItem('learnx_refresh_token');
+        return sessionStorage.getItem(REFRESH_KEY) || localStorage.getItem(REFRESH_KEY);
     };
 
-    // Auth service URL detection
+    // Auth service URL detection (via API gateway)
     const getAuthServiceUrl = () => {
         if (window.AUTH_SERVICE_URL) return window.AUTH_SERVICE_URL;
-        const hostname = window.location.hostname;
-        if (hostname === 'localhost' || hostname === '127.0.0.1') return 'http://localhost:2025';
-        if (hostname === 'host.docker.internal') return 'http://host.docker.internal:2025';
-        return `${window.location.protocol}//${hostname.replace('meet.', '')}`;
+        return getGatewayBase() + '/auth-service';
     };
 
     // Try to refresh the access token
@@ -152,11 +149,11 @@
             if (resp.ok) {
                 const data = await resp.json();
                 if (data.access_token) {
-                    sessionStorage.setItem('learnx_access_token', data.access_token);
-                    localStorage.setItem('learnx_access_token', data.access_token);
+                    sessionStorage.setItem(TOKEN_KEY, data.access_token);
+                    localStorage.setItem(TOKEN_KEY, data.access_token);
                     if (data.refresh_token) {
-                        sessionStorage.setItem('learnx_refresh_token', data.refresh_token);
-                        localStorage.setItem('learnx_refresh_token', data.refresh_token);
+                        sessionStorage.setItem(REFRESH_KEY, data.refresh_token);
+                        localStorage.setItem(REFRESH_KEY, data.refresh_token);
                     }
                     return data.access_token;
                 }
@@ -310,7 +307,7 @@
             })
             .catch(error => {
                 console.error('[LearnX Room Validator] ✗ Validation error:', error);
-                window.location.href = `/error.html?error=service-error&reason=${encodeURIComponent(error.message)}&room=${encodeURIComponent(roomName)}`;
+                window.location.href = `/error.html?error=service-error&room=${encodeURIComponent(roomName)}`;
             });
     };
 

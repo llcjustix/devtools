@@ -292,14 +292,20 @@
                 document.getElementById('errorDetails').style.display = 'block';
             }
         } else if (reason) {
-            document.getElementById('errorReason').innerHTML = `<p>&bull; ${reason}</p>`;
+            const reasonP = document.createElement('p');
+            reasonP.textContent = '\u2022 ' + reason;
+            document.getElementById('errorReason').appendChild(reasonP);
             document.getElementById('errorDetails').style.display = 'block';
         }
 
         if (room) {
             const roomEl = document.createElement('p');
             roomEl.style.cssText = 'color:#9ca3af;font-size:13px;margin-top:12px;';
-            roomEl.innerHTML = `Room: <strong>${room}</strong>`;
+            const roomLabel = document.createTextNode('Room: ');
+            const roomStrong = document.createElement('strong');
+            roomStrong.textContent = room;
+            roomEl.appendChild(roomLabel);
+            roomEl.appendChild(roomStrong);
             document.getElementById('errorMessage').after(roomEl);
         }
 

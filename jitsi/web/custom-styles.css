@@ -374,3 +374,243 @@ div[class*="toolbox-content"] button {
 *:focus-visible {
     outline-color: var(--lx-primary) !important;
 }
+
+/* ========================================
+   MAIN CONFERENCE AREA
+   ======================================== */
+
+/* Conference background - dark with purple tint */
+#largeVideoContainer,
+[id="largeVideoContainer"],
+.large-video-container,
+[class*="LargeVideo"] {
+    background: linear-gradient(135deg, #0f0a1a 0%, #1a1025 50%, #0d0814 100%) !important;
+}
+
+/* Overall conference body */
+body {
+    background: #0f0a1a !important;
+}
+
+/* ========================================
+   TOOLBAR AREA - Frosted glass bar
+   ======================================== */
+
+div[class*="Toolbox"],
+[class*="toolbox-content-wrapper"],
+[class*="new-toolbox"] {
+    background: rgba(15, 10, 26, 0.85) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border-top: 1px solid rgba(124, 58, 237, 0.15) !important;
+}
+
+/* Toolbar button base - glass morphism */
+div[class*="Toolbox"] button,
+[class*="toolbox-button"] button {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border: 1px solid rgba(255, 255, 255, 0.06) !important;
+    backdrop-filter: blur(8px) !important;
+    width: 48px !important;
+    height: 48px !important;
+}
+
+/* ========================================
+   HEADER / SUBJECT BAR
+   ======================================== */
+
+[class*="subject-info"],
+[class*="SubjectText"],
+[class*="conference-info"] {
+    background: rgba(15, 10, 26, 0.7) !important;
+    backdrop-filter: blur(12px) !important;
+    border-bottom: 1px solid rgba(124, 58, 237, 0.1) !important;
+    border-radius: 0 0 16px 16px !important;
+}
+
+/* Meeting title text */
+[class*="subject-text"],
+[class*="SubjectText"] span {
+    color: rgba(255, 255, 255, 0.95) !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.01em !important;
+}
+
+/* Timer / Duration display */
+[class*="subject-timer"],
+[class*="Timer"] {
+    color: var(--lx-primary-light) !important;
+    font-weight: 500 !important;
+}
+
+/* ========================================
+   VIDEO TILES - Enhanced
+   ======================================== */
+
+[class*="videocontainer"],
+[class*="VideoContainer"],
+[class*="Thumbnail"] {
+    border-radius: 16px !important;
+    overflow: hidden !important;
+    border: 1px solid rgba(124, 58, 237, 0.08) !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Active speaker highlight - purple glow */
+[class*="videocontainer"][class*="speaking"],
+[class*="dominant-speaker"],
+[class*="activeSpeaker"] {
+    box-shadow: 0 0 0 2px var(--lx-primary), 0 0 24px rgba(124, 58, 237, 0.3) !important;
+    border-color: var(--lx-primary) !important;
+}
+
+/* Display name badge on tiles */
+[class*="display-name"],
+[class*="DisplayName"] {
+    background: rgba(15, 10, 26, 0.7) !important;
+    backdrop-filter: blur(8px) !important;
+    border-radius: 8px !important;
+    padding: 4px 10px !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+}
+
+/* ========================================
+   SIDE PANELS - Frosted glass
+   ======================================== */
+
+[class*="side-panel"],
+[class*="SidePanel"],
+[class*="participants_pane"],
+[class*="chat-panel"] {
+    background: rgba(15, 10, 26, 0.92) !important;
+    backdrop-filter: blur(24px) !important;
+    border-left: 1px solid rgba(124, 58, 237, 0.12) !important;
+}
+
+/* Panel headers */
+[class*="side-panel"] [class*="header"],
+[class*="SidePanel"] [class*="Header"] {
+    border-bottom: 1px solid rgba(124, 58, 237, 0.1) !important;
+}
+
+/* ========================================
+   CHAT ENHANCEMENTS
+   ======================================== */
+
+/* Chat input area */
+[class*="chat-input"],
+[class*="ChatInput"] {
+    background: rgba(255, 255, 255, 0.06) !important;
+    border: 1px solid rgba(124, 58, 237, 0.15) !important;
+    border-radius: 12px !important;
+}
+
+[class*="chat-input"] textarea,
+[class*="ChatInput"] textarea {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Chat messages */
+[class*="chatMessageGroup"] [class*="message"],
+[class*="ChatMessage"] {
+    background: rgba(124, 58, 237, 0.08) !important;
+    border-radius: 12px !important;
+    border: 1px solid rgba(124, 58, 237, 0.06) !important;
+}
+
+/* ========================================
+   NOTIFICATIONS - Purple accent
+   ======================================== */
+
+[class*="notification"],
+[class*="Notification"] {
+    background: rgba(15, 10, 26, 0.9) !important;
+    backdrop-filter: blur(16px) !important;
+    border: 1px solid rgba(124, 58, 237, 0.2) !important;
+    border-radius: 14px !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* ========================================
+   PREJOIN SCREEN - LearnX branded
+   ======================================== */
+
+[class*="prejoin"],
+[class*="premeeting"] {
+    background: linear-gradient(135deg, #0f0a1a 0%, #1a1025 100%) !important;
+}
+
+/* Prejoin join button */
+[class*="prejoin"] button[class*="primary"],
+[class*="ActionButton"][class*="primary"] {
+    background: linear-gradient(135deg, #9b6dff, #7c3aed) !important;
+    border: none !important;
+    border-radius: 24px !important;
+    padding: 14px 32px !important;
+    font-size: 15px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.02em !important;
+    box-shadow: 0 4px 16px rgba(124, 58, 237, 0.35) !important;
+    transition: all 0.3s ease !important;
+}
+
+[class*="prejoin"] button[class*="primary"]:hover,
+[class*="ActionButton"][class*="primary"]:hover {
+    box-shadow: 0 6px 24px rgba(124, 58, 237, 0.5) !important;
+    transform: translateY(-2px) !important;
+}
+
+/* Prejoin video preview */
+[class*="prejoin-preview"],
+[class*="premeeting-screen"] {
+    border-radius: 20px !important;
+    overflow: hidden !important;
+    border: 1px solid rgba(124, 58, 237, 0.15) !important;
+}
+
+/* ========================================
+   MODALS / DIALOGS - Glass effect
+   ======================================== */
+
+[class*="dialog"],
+[class*="Dialog"],
+[class*="modal"],
+[class*="Modal"] {
+    background: rgba(20, 15, 30, 0.95) !important;
+    backdrop-filter: blur(24px) !important;
+    border: 1px solid rgba(124, 58, 237, 0.15) !important;
+    border-radius: 20px !important;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Dialog overlay */
+[class*="dialog-overlay"],
+[class*="DialogPortal"] > div:first-child {
+    background: rgba(0, 0, 0, 0.6) !important;
+    backdrop-filter: blur(4px) !important;
+}
+
+/* ========================================
+   LOBBY SCREEN - Enhanced
+   ======================================== */
+
+[class*="lobby-screen"],
+[class*="LobbyScreen"] {
+    background: linear-gradient(135deg, #0f0a1a, #1a1025) !important;
+}
+
+[class*="lobby-screen"] [class*="title"],
+[class*="LobbyScreen"] h2 {
+    color: white !important;
+    font-weight: 700 !important;
+}
+
+/* ========================================
+   WATERMARK / BRANDING
+   ======================================== */
+
+[class*="watermark"],
+[class*="Watermark"] {
+    opacity: 0.4 !important;
+}

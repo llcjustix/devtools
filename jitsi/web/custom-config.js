@@ -2,34 +2,11 @@
 // This file contains configuration that disables default Jitsi recording UI
 // and enforces backend-controlled recording logic
 
-// DYNAMIC MEETING SERVICE URL DETECTION
+// DYNAMIC MEETING SERVICE URL DETECTION (via API gateway)
 const meetingServiceUrl = (() => {
-    // 1. Check if injected via Docker build arg (production)
-    if (window.MEETING_SERVICE_URL) {
-        console.log('[LearnX Meets] Using injected MEETING_SERVICE_URL:', window.MEETING_SERVICE_URL);
-        return window.MEETING_SERVICE_URL;
-    }
-
-    // 2. Detect environment from hostname (development/staging/production)
-    const hostname = window.location.hostname;
-
-    // Local development
-    if (hostname === 'localhost' || hostname === '127.0.0.1') {
-        console.log('[LearnX Meets] Detected local development environment');
-        return 'http://localhost:2031';
-    }
-
-    // Docker internal (host.docker.internal)
-    if (hostname === 'host.docker.internal') {
-        console.log('[LearnX Meets] Detected Docker internal environment');
-        return 'http://host.docker.internal:2031';
-    }
-
-    // Production: Same domain, different port
-    const protocol = window.location.protocol;
-    const productionUrl = `${protocol}//${hostname.replace('meet.', '')}`;
-    console.log('[LearnX Meets] Detected production environment:', productionUrl);
-    return productionUrl;
+    if (window.MEETING_SERVICE_URL) return window.MEETING_SERVICE_URL;
+    const base = `${window.location.protocol}//${window.location.hostname.replace('meet.', '')}`;
+    return base + '/meeting-service';
 })();
 
 console.log('[LearnX Meets] Meeting Service URL:', meetingServiceUrl);
@@ -138,8 +115,9 @@ window.applyRoomConfiguration = function(roomConfig) {
     console.log('[LearnX Meets] Room configuration applied:', roomConfig);
 };
 
-// Listen for room config from parent window or API
+// Listen for room config from parent window or API (same-origin only)
 window.addEventListener('message', function(event) {
+    if (event.origin !== window.location.origin) return;
     if (event.data && event.data.type === 'ROOM_CONFIG') {
         window.applyRoomConfiguration(event.data.config);
     }
@@ -180,10 +158,19 @@ config.liveStreaming = {
     enabled: false
 };
 
-// Disable transcription (not needed)
+// Disable transcription (not needed yet)
 config.transcription = {
     enabled: false
 };
+
+// Excalidraw collaborative whiteboard
+// WHITEBOARD_COLLAB_SERVER_PUBLIC_URL env var is auto-injected by jitsi-web entrypoint
+if (!config.whiteboard || !config.whiteboard.collabServerBaseUrl) {
+    config.whiteboard = {
+        enabled: true,
+        collabServerBaseUrl: window.location.origin
+    };
+}
 
 // Custom branding
 config.defaultLocalDisplayName = 'Me';
@@ -233,10 +220,49 @@ config.disableInviteFunctions = false;
 
 // CRITICAL FIX: Disable welcome page completely
 config.enableWelcomePage = false;  // Users cannot create rooms from Jitsi UI
-config.enableClosePage = false;
+config.enableClosePage = false;    // We handle close/redirect ourselves
 
 // Prejoin page (name entry before joining)
 config.prejoinConfig = {
     enabled: true,
     hideDisplayName: false
 };
+
+// Hangup menu: moderators see "Leave" + "End meeting for all" (like Zoom)
+// Regular participants only see "Leave meeting"
+config.hangupMenuEnabled = true;
+
+// ========================================
+// MEETING LEAVE/END HANDLER
+// On leave or "end for all" → redirect to welcome page
+// Meeting stays available until it EXPIRES (no backend status change needed)
+// ========================================
+(function() {
+    'use strict';
+
+    const redirectToWelcome = () => {
+        window.location.href = '/welcome.html';
+    };
+
+    // Intercept Jitsi's post-hangup navigation (it tries '/' or '#')
+    const originalPushState = history.pushState;
+    const originalReplaceState = history.replaceState;
+
+    const interceptNav = (url) => {
+        if (typeof url === 'string' && (url === '/' || url === '' || url === window.location.origin + '/')) {
+            redirectToWelcome();
+            return true;
+        }
+        return false;
+    };
+
+    history.pushState = function() {
+        if (!interceptNav(arguments[2])) originalPushState.apply(this, arguments);
+    };
+    history.replaceState = function() {
+        if (!interceptNav(arguments[2])) originalReplaceState.apply(this, arguments);
+    };
+
+    // Expose for external use
+    window.LearnXMeeting = { leaveMeeting: redirectToWelcome };
+})();

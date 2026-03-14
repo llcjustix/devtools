@@ -9,7 +9,7 @@
  * 2. For PRIVATE meetings: redirect to login if not authenticated
  * 3. For PUBLIC meetings: allow anonymous access
  * 4. Spring Security handles Keycloak authentication
- * 5. Keycloak JWT is in HTTP-only cookie (secure)
+ * 5. JWT stored in sessionStorage/localStorage
  * 6. Prosody validates access via meeting-service webhook
  *
  * Note: Authentication happens on-demand when Prosody validates room access.
@@ -19,27 +19,12 @@
 (function() {
     'use strict';
 
-    // Get meeting service URL (same detection as custom-config.js)
+    // Get meeting service URL (via API gateway)
     const meetingServiceUrl = (() => {
-        if (window.MEETING_SERVICE_URL) {
-            return window.MEETING_SERVICE_URL;
-        }
-
-        const hostname = window.location.hostname;
-
-        if (hostname === 'localhost' || hostname === '127.0.0.1') {
-            return 'http://localhost:2031';
-        }
-
-        if (hostname === 'host.docker.internal') {
-            return 'http://host.docker.internal:2031';
-        }
-
-        const protocol = window.location.protocol;
-        return `${protocol}//${hostname.replace('meet.', '')}`;
+        if (window.MEETING_SERVICE_URL) return window.MEETING_SERVICE_URL;
+        const base = `${window.location.protocol}//${window.location.hostname.replace('meet.', '')}`;
+        return base + '/meeting-service';
     })();
-
-    console.log('[LearnX Meets] Meeting Service URL:', meetingServiceUrl);
 
     /**
      * Authentication is handled by Spring Security + Prosody.
@@ -172,10 +157,14 @@
             max-width: 400px;
         `;
 
-        messageBox.innerHTML = `
-            <h2 style="margin: 0 0 20px 0; font-size: 24px;">Authentication Required</h2>
-            <p style="margin: 0; font-size: 16px; color: #ccc;">${message}</p>
-        `;
+        const h2 = document.createElement('h2');
+        h2.style.cssText = 'margin: 0 0 20px 0; font-size: 24px;';
+        h2.textContent = 'Authentication Required';
+        const p = document.createElement('p');
+        p.style.cssText = 'margin: 0; font-size: 16px; color: #ccc;';
+        p.textContent = message;
+        messageBox.appendChild(h2);
+        messageBox.appendChild(p);
 
         overlay.appendChild(messageBox);
         document.body.appendChild(overlay);

@@ -6,7 +6,7 @@ local cjson = require "cjson"
 
 -- Get room name from URI
 local uri = ngx.var.uri
-local room_name = string.match(uri, "^/([^/]+)$")
+local room_name = string.match(uri, "^/([a-zA-Z0-9_%-]+)$")
 
 -- Skip validation for static resources and special paths
 if not room_name or
@@ -33,7 +33,7 @@ ngx.log(ngx.INFO, "Validating room: ", room_name)
 local httpc = http.new()
 httpc:set_timeout(2000)  -- 2 second timeout
 
-local meeting_service_url = os.getenv("MEETING_SERVICE_URL") or "http://host.docker.internal:2031"
+local meeting_service_url = os.getenv("MEETING_SERVICE_URL") or "http://host.docker.internal:2022/meeting-service"
 local validation_url = meeting_service_url .. "/webhooks/jitsi/check-room-status/" .. room_name
 
 local res, err = httpc:request_uri(validation_url, {

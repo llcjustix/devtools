@@ -170,8 +170,6 @@
             border-color: #a78bfa;
             transform: translateY(-1px);
         }
-        .btn-create { display: none; }
-        .btn-create.show { display: inline-flex; }
 
         /* User badge & dropdown */
         .user-badge-wrap {
@@ -1642,12 +1640,6 @@
         <div class="navbar-right">
             <span class="navbar-time" id="currentTime"></span>
 
-            <!-- Create meeting - admin/moderator/teacher only -->
-            <button class="nav-btn nav-btn-primary btn-create" id="createMeetingBtn" onclick="heroCreateMeeting()">
-                <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd"/></svg>
-                New Meeting
-            </button>
-
             <!-- Login button -->
             <a href="/login.html" class="nav-btn nav-btn-outline" id="loginBtn">
                 <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 3a1 1 0 011 1v12a1 1 0 11-2 0V4a1 1 0 011-1zm7.707 3.293a1 1 0 010 1.414L9.414 9H17a1 1 0 110 2H9.414l1.293 1.293a1 1 0 01-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
@@ -2116,19 +2108,19 @@
         'use strict';
 
         // ---- Config ----
+        // Service URLs: injected via window.MEETING_SERVICE_URL / window.AUTH_SERVICE_URL
+        // (set by Docker build args or <script> tag), or derived from hostname
+        const getGatewayBase = () => {
+            const h = window.location.hostname;
+            return window.location.protocol + '//' + h.replace('meet.', '');
+        };
         const getMeetingServiceUrl = () => {
             if (window.MEETING_SERVICE_URL) return window.MEETING_SERVICE_URL;
-            const h = window.location.hostname;
-            if (h === 'localhost' || h === '127.0.0.1') return 'http://localhost:2031';
-            if (h === 'host.docker.internal') return 'http://host.docker.internal:2031';
-            return window.location.protocol + '//' + h.replace('meet.', '');
+            return getGatewayBase() + '/meeting-service';
         };
         const getAuthServiceUrl = () => {
             if (window.AUTH_SERVICE_URL) return window.AUTH_SERVICE_URL;
-            const h = window.location.hostname;
-            if (h === 'localhost' || h === '127.0.0.1') return 'http://localhost:2025';
-            if (h === 'host.docker.internal') return 'http://host.docker.internal:2025';
-            return window.location.protocol + '//' + h.replace('meet.', '');
+            return getGatewayBase() + '/auth-service';
         };
 
         const MEETING_URL = getMeetingServiceUrl();
@@ -2209,21 +2201,19 @@
         };
 
         // ---- Hero "New Meeting" button ----
-        window.heroCreateMeeting = async function() {
-            const token = await getValidToken();
-            if (!token) {
-                clearTokens();
-                window.location.href = '/login.html';
-                return;
-            }
-            if (typeof openCreateModal === 'function') {
-                openCreateModal();
+        window.heroCreateMeeting = function() {
+            // Go to schedule page immediately — it handles its own auth check
+            var token = getJwtToken();
+            if (token) {
+                window.location.href = '/schedule.html';
+            } else {
+                window.location.href = '/login.html?returnUrl=/schedule.html';
             }
         };
 
         // ---- JWT token helpers ----
-        const TOKEN_KEY = 'learnx_access_token';
-        const REFRESH_KEY = 'learnx_refresh_token';
+        const TOKEN_KEY = window.LEARNX_TOKEN_KEY || 'learnx_access_token';
+        const REFRESH_KEY = window.LEARNX_REFRESH_KEY || 'learnx_refresh_token';
 
         const getJwtToken = () =>
             sessionStorage.getItem(TOKEN_KEY) || localStorage.getItem(TOKEN_KEY);
@@ -2353,10 +2343,13 @@
 
             isAdmin = roles.includes('ADMIN') || roles.includes('MODERATOR') || roles.includes('TEACHER');
 
+            // Hide "New Meeting" button for all logged-in users
+            document.getElementById('heroNewMeetingBtn').style.display = 'none';
+
             if (isAdmin) {
-                document.getElementById('createMeetingBtn').classList.add('show');
-                document.getElementById('managementSection').classList.add('show');
-                loadMeetings();
+                // Admin users go straight to schedule/management page
+                window.location.href = '/schedule.html';
+                return;
             } else {
                 document.getElementById('infoBanner').classList.add('show');
             }
@@ -2391,7 +2384,11 @@
         });
 
         // ---- Logout ----
-        window.logout = function() {
+        window.logout = async function() {
+            const token = getJwtToken();
+            if (token) {
+                try { await fetch(AUTH_URL + '/auth/logout', { headers: { 'Authorization': 'Bearer ' + token } }); } catch (e) {}
+            }
             clearTokens();
             window.location.href = '/welcome.html';
         };
@@ -2494,16 +2491,16 @@
                     '</div>' +
                 '</div>' +
                 '<div class="meeting-card-actions">' +
-                    '<button class="card-action-btn primary" onclick="window.open(\'' + escapeHtml(roomUrl) + '\', \'_blank\')">' +
+                    '<button class="card-action-btn primary" onclick="window.open(\'' + escapeJsAttr(roomUrl) + '\', \'_blank\')">' +
                         '<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"/></svg>' +
                         'Join' +
                     '</button>' +
-                    '<button class="card-action-btn ghost" onclick="copyMeetingLink(\'' + escapeHtml(roomUrl) + '\')">' +
+                    '<button class="card-action-btn ghost" onclick="copyMeetingLink(\'' + escapeJsAttr(roomUrl) + '\')">' +
                         '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z"/><path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z"/></svg>' +
                         'Copy Link' +
                     '</button>' +
                     (meeting.status === 'SCHEDULED' ?
-                        '<button class="card-action-btn danger" onclick="cancelMeeting(\'' + meeting.id + '\')">' +
+                        '<button class="card-action-btn danger" onclick="cancelMeeting(\'' + escapeJsAttr(meeting.id) + '\')">' +
                             '<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>' +
                             'Cancel' +
                         '</button>' : '') +
@@ -2517,6 +2514,12 @@
             const div = document.createElement('div');
             div.textContent = str;
             return div.innerHTML;
+        }
+
+        // Escape for use inside JS string in onclick attributes
+        function escapeJsAttr(str) {
+            if (!str) return '';
+            return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
         }
 
         // ---- Copy meeting link ----
@@ -2615,7 +2618,7 @@
             container.innerHTML = participantEmails.map(email =>
                 '<div class="email-chip">' +
                     '<span>' + escapeHtml(email) + '</span>' +
-                    '<button onclick="window._removeParticipant(\'' + email + '\')">&times;</button>' +
+                    '<button onclick="window._removeParticipant(\'' + escapeJsAttr(email) + '\')">&times;</button>' +
                 '</div>'
             ).join('');
         }
@@ -2689,9 +2692,15 @@
                     body: JSON.stringify(body)
                 });
 
-                if (resp.status === 401 || resp.status === 403) {
+                if (resp.status === 401) {
                     clearTokens();
                     window.location.href = '/login.html';
+                    return;
+                }
+                if (resp.status === 403) {
+                    showToast('Access denied. Only administrators can create meetings.', 'error');
+                    btn.disabled = false;
+                    btn.textContent = 'Create Meeting';
                     return;
                 }
 

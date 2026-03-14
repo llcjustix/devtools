@@ -1,0 +1,2654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Schedule Meeting - LearnX Meets</title>
+    <link rel="icon" href="images/learnx-icon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+
+        :root {
+            --primary: #7c3aed;
+            --primary-dark: #5b21b6;
+            --primary-light: #a78bfa;
+            --bg: #faf8ff;
+            --text: #0f172a;
+            --text-secondary: #64748b;
+            --border: rgba(124, 58, 237, 0.1);
+            --card-shadow: 0 8px 40px rgba(124, 58, 237, 0.06);
+            --radius-sm: 10px;
+            --radius-md: 14px;
+            --radius-lg: 18px;
+            --radius-xl: 24px;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            min-height: 100vh;
+            color: var(--text);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* ---- Animations ---- */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(28px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes shimmer {
+            0%, 100% { left: -60%; }
+            50% { left: 120%; }
+        }
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateX(60px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes toastOut {
+            from { opacity: 1; transform: translateX(0); }
+            to { opacity: 0; transform: translateX(60px); }
+        }
+        @keyframes checkDraw {
+            from { stroke-dashoffset: 24; }
+            to { stroke-dashoffset: 0; }
+        }
+        @keyframes confettiFall {
+            0% { transform: translateY(-10px) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(calc(100vh + 20px)) rotate(720deg); opacity: 0; }
+        }
+        @keyframes successPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.3); }
+            50% { box-shadow: 0 0 0 20px rgba(124, 58, 237, 0); }
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* ---- Navbar ---- */
+        .navbar {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 40px;
+            height: 64px;
+            background: rgba(250, 248, 255, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(124, 58, 237, 0.06);
+            transition: background 0.3s ease, box-shadow 0.3s ease;
+        }
+        .navbar.scrolled {
+            background: rgba(250, 248, 255, 0.92);
+            box-shadow: 0 1px 20px rgba(124, 58, 237, 0.06);
+        }
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+        }
+        .navbar-brand img { height: 30px; }
+        .navbar-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .navbar-time {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            letter-spacing: 0.01em;
+            padding-right: 4px;
+        }
+
+        /* User badge */
+        .user-badge-wrap {
+            position: relative;
+            display: none;
+        }
+        .user-badge-wrap.show { display: block; }
+        .user-badge {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 5px 12px 5px 5px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: white;
+            border: 1.5px solid rgba(124, 58, 237, 0.08);
+        }
+        .user-badge:hover {
+            background: #f5f0ff;
+            border-color: rgba(124, 58, 237, 0.15);
+        }
+        .avatar {
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #7c3aed, #ec4899);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+        .user-badge span {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text);
+            max-width: 120px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .user-badge svg { color: var(--text-secondary); transition: transform 0.2s; }
+
+        .user-dropdown {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            width: 260px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(124, 58, 237, 0.06);
+            padding: 8px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-8px) scale(0.97);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .user-dropdown.open {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0) scale(1);
+        }
+        .dropdown-user-info {
+            padding: 14px 12px;
+            border-bottom: 1px solid #f0ecf9;
+            margin-bottom: 4px;
+        }
+        .dropdown-user-info .name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 2px;
+        }
+        .dropdown-user-info .email {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+        .role-badge {
+            display: inline-block;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            padding: 3px 8px;
+            border-radius: 6px;
+            background: linear-gradient(135deg, #f5f0ff, #ede5ff);
+            color: var(--primary);
+        }
+        .user-dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            padding: 10px 12px;
+            border: none;
+            background: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            font-family: inherit;
+            color: var(--text-secondary);
+            transition: all 0.15s;
+        }
+        .user-dropdown-item:hover { background: #f5f0ff; color: var(--primary); }
+        .user-dropdown-item svg { width: 16px; height: 16px; }
+        .user-dropdown-item.danger { color: #ef4444; }
+        .user-dropdown-item.danger:hover { background: #fef2f2; }
+
+        /* ---- Toast ---- */
+        .toast-container {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 300;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .toast {
+            padding: 14px 20px 14px 24px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text);
+            background: white;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+            animation: toastIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), toastOut 0.3s 2.9s ease forwards;
+            border-left: 4px solid var(--text-secondary);
+            max-width: 380px;
+        }
+        .toast.success { border-left-color: #10b981; }
+        .toast.error { border-left-color: #ef4444; }
+
+        /* ---- Main layout ---- */
+        .main-content {
+            padding-top: 64px;
+            min-height: 100vh;
+        }
+
+        .page-header {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 40px 24px;
+        }
+        .page-header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text);
+            letter-spacing: -0.02em;
+        }
+
+        .layout {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 32px 40px 80px;
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 32px;
+            align-items: start;
+        }
+
+        /* ---- Cards ---- */
+        .card {
+            background: white;
+            border-radius: var(--radius-xl);
+            border: 1px solid var(--border);
+            padding: 28px;
+            box-shadow: var(--card-shadow);
+            margin-bottom: 20px;
+            opacity: 0;
+            animation: fadeInUp 0.5s ease forwards;
+        }
+        .card:nth-child(1) { animation-delay: 0.15s; }
+        .card:nth-child(2) { animation-delay: 0.2s; }
+        .card:nth-child(3) { animation-delay: 0.25s; }
+        .card:nth-child(4) { animation-delay: 0.3s; }
+        .card:nth-child(5) { animation-delay: 0.35s; }
+        .card:nth-child(6) { animation-delay: 0.4s; }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .card-title svg {
+            width: 20px; height: 20px;
+            color: var(--primary);
+        }
+
+        /* ---- Form elements ---- */
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-group:last-child { margin-bottom: 0; }
+
+        .form-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 6px;
+            letter-spacing: 0.01em;
+        }
+
+        .form-input,
+        .form-select,
+        .form-textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1.5px solid var(--border);
+            border-radius: 12px;
+            font-size: 14px;
+            font-family: inherit;
+            color: var(--text);
+            background: white;
+            outline: none;
+            transition: border-color 0.25s ease, box-shadow 0.25s ease;
+        }
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.08);
+        }
+        .form-input::placeholder,
+        .form-textarea::placeholder {
+            color: #94a3b8;
+        }
+        .form-textarea {
+            resize: vertical;
+            min-height: 80px;
+            line-height: 1.5;
+        }
+        .form-select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%2394a3b8' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            padding-right: 40px;
+            cursor: pointer;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .form-hint {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        /* ---- Toggle Switch ---- */
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 0;
+        }
+        .toggle-row + .toggle-row {
+            border-top: 1px solid rgba(124, 58, 237, 0.04);
+        }
+        .toggle-label {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text);
+        }
+        .toggle-label small {
+            display: block;
+            font-size: 12px;
+            font-weight: 400;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+        .toggle-switch {
+            position: relative;
+            width: 48px;
+            height: 26px;
+            flex-shrink: 0;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+            position: absolute;
+        }
+        .toggle-slider {
+            position: absolute;
+            inset: 0;
+            background: #e2e8f0;
+            border-radius: 26px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        .toggle-slider::before {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            top: 3px;
+            left: 3px;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+        }
+        .toggle-switch input:checked + .toggle-slider {
+            background: linear-gradient(135deg, #7c3aed, #5b21b6);
+        }
+        .toggle-switch input:checked + .toggle-slider::before {
+            transform: translateX(22px);
+        }
+        .toggle-switch input:focus + .toggle-slider {
+            box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.08);
+        }
+
+        /* ---- Access type selector ---- */
+        .access-selector {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .access-option {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1.5px solid var(--border);
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            background: white;
+        }
+        .access-option:hover {
+            border-color: var(--primary-light);
+            background: #faf5ff;
+        }
+        .access-option.active {
+            border-color: var(--primary);
+            background: linear-gradient(135deg, #f5f0ff, #ede5ff);
+            box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.06);
+        }
+        .access-option .access-icon {
+            width: 36px; height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 8px;
+            background: rgba(124, 58, 237, 0.06);
+            color: var(--primary);
+            transition: all 0.25s;
+        }
+        .access-option.active .access-icon {
+            background: linear-gradient(135deg, #7c3aed, #5b21b6);
+            color: white;
+        }
+        .access-option .access-icon svg { width: 18px; height: 18px; }
+        .access-option-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+        }
+        .access-info {
+            font-size: 12px;
+            color: var(--text-secondary);
+            padding: 10px 14px;
+            border-radius: 10px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 16px;
+        }
+
+        /* ---- Participant chips ---- */
+        .participant-input-row {
+            display: flex;
+            gap: 8px;
+        }
+        .participant-input-row .form-input {
+            flex: 1;
+        }
+        .btn-add {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #7c3aed, #5b21b6);
+            color: white;
+            font-size: 13px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.25s;
+            white-space: nowrap;
+        }
+        .btn-add:hover {
+            box-shadow: 0 4px 16px rgba(124, 58, 237, 0.3);
+            transform: translateY(-1px);
+        }
+        .btn-add:active { transform: translateY(0); }
+
+        .chips-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 8px 6px 12px;
+            border-radius: 50px;
+            background: linear-gradient(135deg, #f5f0ff, #ede5ff);
+            border: 1px solid rgba(124, 58, 237, 0.1);
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text);
+            animation: fadeIn 0.2s ease;
+        }
+        .chip-role {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: rgba(124, 58, 237, 0.08);
+            color: var(--primary);
+            cursor: pointer;
+            border: none;
+            font-family: inherit;
+            transition: all 0.15s;
+        }
+        .chip-role:hover { background: rgba(124, 58, 237, 0.15); }
+        .chip-role.co-host {
+            background: rgba(236, 72, 153, 0.1);
+            color: #db2777;
+        }
+        .chip-remove {
+            width: 20px; height: 20px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(124, 58, 237, 0.08);
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.15s;
+            padding: 0;
+        }
+        .chip-remove:hover {
+            background: #ef4444;
+            color: white;
+        }
+        .chip-remove svg { width: 12px; height: 12px; }
+
+        /* ---- Collapsible section ---- */
+        .collapsible-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            padding: 4px 0;
+            user-select: none;
+        }
+        .collapsible-header svg {
+            width: 20px; height: 20px;
+            color: var(--text-secondary);
+            transition: transform 0.3s ease;
+        }
+        .collapsible-header.open svg {
+            transform: rotate(180deg);
+        }
+        .collapsible-body {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s ease;
+        }
+        .collapsible-body.open {
+            max-height: 1000px;
+            padding-top: 16px;
+        }
+
+        /* ---- Checkboxes ---- */
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 0;
+        }
+        .checkbox-row input[type="checkbox"] {
+            width: 18px; height: 18px;
+            accent-color: var(--primary);
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .checkbox-row label {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text);
+            cursor: pointer;
+        }
+
+        /* ---- Buttons ---- */
+        .form-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 28px;
+            padding-top: 24px;
+            border-top: 1px solid rgba(124, 58, 237, 0.06);
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 14px 28px;
+            border-radius: var(--radius-md);
+            font-size: 15px;
+            font-weight: 600;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #7c3aed, #5b21b6);
+            color: white;
+            box-shadow: 0 4px 20px rgba(124, 58, 237, 0.3);
+        }
+        .form-actions .btn-primary { flex: 1; }
+        .btn-primary::after {
+            content: '';
+            position: absolute;
+            top: -50%; left: -60%;
+            width: 40%; height: 200%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+            transform: skewX(-20deg);
+            animation: shimmer 4s ease-in-out infinite;
+        }
+        .btn-primary:hover {
+            box-shadow: 0 8px 36px rgba(124, 58, 237, 0.45);
+            transform: translateY(-2px) scale(1.02);
+        }
+        .btn-primary:active { transform: translateY(0) scale(1); }
+        .btn-primary:disabled {
+            background: #d1d5db;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .btn-primary:disabled::after { display: none; }
+
+        .btn-secondary {
+            background: white;
+            color: var(--text-secondary);
+            border: 1.5px solid #e2e8f0;
+        }
+        .btn-secondary:hover {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+            color: var(--text);
+        }
+
+        .btn-icon { width: 20px; height: 20px; }
+
+        /* ---- Right column: sticky ---- */
+        .right-column {
+            position: sticky;
+            top: 96px;
+        }
+        .right-column .card {
+            animation-delay: 0.3s;
+        }
+
+        /* ---- Mini Calendar ---- */
+        .calendar {
+            user-select: none;
+        }
+        .calendar-nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+        .calendar-nav-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text);
+        }
+        .calendar-nav-btn {
+            width: 32px; height: 32px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+        }
+        .calendar-nav-btn:hover {
+            background: #f5f0ff;
+            color: var(--primary);
+            border-color: var(--primary-light);
+        }
+        .calendar-nav-btn svg { width: 14px; height: 14px; }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 2px;
+            text-align: center;
+        }
+        .calendar-dow {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 6px 0;
+        }
+        .calendar-day {
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: 10px;
+            border: none;
+            background: transparent;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.15s;
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .calendar-day:hover {
+            background: #f5f0ff;
+        }
+        .calendar-day.other-month {
+            color: #cbd5e1;
+        }
+        .calendar-day.other-month:hover {
+            background: #f8fafc;
+        }
+        .calendar-day.today {
+            font-weight: 700;
+            color: var(--primary);
+            background: rgba(124, 58, 237, 0.06);
+        }
+        .calendar-day.selected {
+            background: linear-gradient(135deg, #7c3aed, #5b21b6);
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 2px 10px rgba(124, 58, 237, 0.3);
+        }
+        .calendar-day.selected:hover {
+            background: linear-gradient(135deg, #7c3aed, #5b21b6);
+        }
+        .calendar-day.past {
+            color: #d1d5db;
+            cursor: default;
+        }
+        .calendar-day.past:hover {
+            background: transparent;
+        }
+
+        /* ---- Summary card ---- */
+        .summary-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 0;
+        }
+        .summary-item + .summary-item {
+            border-top: 1px solid rgba(124, 58, 237, 0.04);
+        }
+        .summary-item-label {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        .summary-item-value {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+        }
+        .badge-public {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 50px;
+            background: #ecfdf5;
+            color: #059669;
+        }
+        .badge-private {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 50px;
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        /* ---- Invite preview ---- */
+        .invite-preview {
+            display: none;
+        }
+        .invite-preview.show {
+            display: block;
+        }
+        .invite-list {
+            list-style: none;
+        }
+        .invite-list li {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 0;
+            font-size: 13px;
+        }
+        .invite-list li + li {
+            border-top: 1px solid rgba(124, 58, 237, 0.04);
+        }
+        .invite-email {
+            font-weight: 500;
+            color: var(--text);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 200px;
+        }
+        .invite-role-tag {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 2px 8px;
+            border-radius: 4px;
+            background: rgba(124, 58, 237, 0.06);
+            color: var(--primary);
+        }
+        .invite-summary-text {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(124, 58, 237, 0.04);
+        }
+
+        /* ---- Success state ---- */
+        .success-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 200;
+            background: rgba(250, 248, 255, 0.95);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            align-items: center;
+            justify-content: center;
+        }
+        .success-overlay.show {
+            display: flex;
+        }
+        .success-card {
+            background: white;
+            border-radius: var(--radius-xl);
+            border: 1px solid var(--border);
+            box-shadow: 0 20px 60px rgba(124, 58, 237, 0.1);
+            padding: 48px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            animation: fadeInUp 0.5s ease;
+        }
+        .success-icon {
+            width: 72px; height: 72px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #7c3aed, #5b21b6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            animation: successPulse 2s ease infinite;
+        }
+        .success-icon svg {
+            width: 36px; height: 36px;
+            stroke: white;
+            stroke-width: 2.5;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-dasharray: 24;
+            animation: checkDraw 0.5s 0.3s ease forwards;
+            stroke-dashoffset: 24;
+        }
+        .success-card h2 {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+        .success-card .success-subtitle {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 24px;
+        }
+        .success-url-box {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 24px;
+        }
+        .success-url-box input {
+            flex: 1;
+            border: none;
+            background: transparent;
+            font-family: inherit;
+            font-size: 13px;
+            color: var(--text);
+            outline: none;
+            min-width: 0;
+        }
+        .btn-copy {
+            padding: 8px 14px;
+            border-radius: 8px;
+            border: none;
+            background: var(--primary);
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .btn-copy:hover { background: var(--primary-dark); }
+        .success-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .success-actions .btn { flex: 1; padding: 12px 16px; font-size: 14px; }
+
+        .btn-success-primary {
+            background: linear-gradient(135deg, #7c3aed, #5b21b6);
+            color: white;
+            border-radius: var(--radius-md);
+            box-shadow: 0 4px 16px rgba(124, 58, 237, 0.25);
+        }
+        .btn-success-primary:hover {
+            box-shadow: 0 6px 24px rgba(124, 58, 237, 0.35);
+            transform: translateY(-1px);
+        }
+        .btn-success-secondary {
+            background: white;
+            color: var(--text);
+            border: 1.5px solid #e2e8f0;
+            border-radius: var(--radius-md);
+        }
+        .btn-success-secondary:hover {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+        }
+
+        /* ---- Confetti ---- */
+        .confetti-piece {
+            position: fixed;
+            width: 8px;
+            height: 8px;
+            z-index: 210;
+            pointer-events: none;
+            border-radius: 2px;
+        }
+
+        /* ---- Spinner (for create button) ---- */
+        .spinner-small {
+            display: inline-block;
+            width: 18px; height: 18px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+
+        /* ---- Tabs ---- */
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* ---- Filter buttons ---- */
+        .filter-btn {
+            padding: 6px 16px;
+            border: 1.5px solid var(--border);
+            border-radius: 50px;
+            background: white;
+            font-family: inherit;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .filter-btn:hover { border-color: var(--primary-light); color: var(--primary); }
+        .filter-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        /* ---- Meetings grid ---- */
+        .meetings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 16px;
+        }
+        .meeting-card {
+            background: white;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border);
+            padding: 20px;
+            transition: all 0.2s;
+            cursor: default;
+            position: relative;
+            overflow: hidden;
+        }
+        .meeting-card:hover {
+            box-shadow: 0 8px 30px rgba(124, 58, 237, 0.08);
+            border-color: var(--primary-light);
+        }
+        .meeting-card-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        .meeting-card-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text);
+            line-height: 1.3;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex: 1;
+        }
+        .meeting-status-badge {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 3px 10px;
+            border-radius: 50px;
+            white-space: nowrap;
+        }
+        .status-SCHEDULED { background: #eff6ff; color: #2563eb; }
+        .status-IN_PROGRESS { background: #ecfdf5; color: #059669; }
+        .status-COMPLETED { background: #f1f5f9; color: #64748b; }
+        .status-CANCELLED { background: #fef2f2; color: #dc2626; }
+        .status-EXPIRED { background: #fef3c7; color: #d97706; }
+
+        .meeting-card-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 14px;
+        }
+        .meeting-card-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .meeting-card-meta-item svg {
+            width: 14px;
+            height: 14px;
+            flex-shrink: 0;
+            opacity: 0.6;
+        }
+        .meeting-card-actions {
+            display: flex;
+            gap: 8px;
+            border-top: 1px solid rgba(124, 58, 237, 0.04);
+            padding-top: 14px;
+        }
+        .meeting-card-actions .btn {
+            flex: 1;
+            padding: 8px 12px;
+            font-size: 12px;
+            border-radius: 8px;
+            text-align: center;
+            text-decoration: none;
+        }
+        .btn-join {
+            background: linear-gradient(135deg, #7c3aed, #5b21b6);
+            color: white;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .btn-join:hover { box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3); }
+        .btn-copy-link {
+            background: white;
+            color: var(--text);
+            border: 1.5px solid #e2e8f0;
+            font-weight: 500;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .btn-copy-link:hover { border-color: #cbd5e1; background: #f8fafc; }
+        .btn-cancel-meeting {
+            background: white;
+            color: #dc2626;
+            border: 1.5px solid #fecaca;
+            font-weight: 500;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .btn-cancel-meeting:hover { background: #fef2f2; border-color: #fca5a5; }
+
+        .access-badge-small {
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+        .access-public { background: #ecfdf5; color: #059669; }
+        .access-private { background: #fef3c7; color: #d97706; }
+
+        /* ---- Responsive ---- */
+        @media (max-width: 900px) {
+            .layout {
+                grid-template-columns: 1fr;
+                padding: 24px 20px 60px;
+            }
+            .right-column {
+                position: static;
+            }
+            .page-header {
+                padding: 28px 20px 0;
+            }
+            .navbar { padding: 0 20px; }
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            .success-card { padding: 32px 24px; }
+            .success-actions { flex-direction: column; }
+            #tabMeetings { padding: 0 20px 60px !important; }
+            .meetings-grid { grid-template-columns: 1fr; }
+            .tab-nav { padding: 0 20px; }
+        }
+        @media (max-width: 480px) {
+            .page-header h1 { font-size: 24px; }
+            .card { padding: 20px; }
+            .participant-input-row { flex-direction: column; }
+            .form-actions { flex-direction: column; }
+            .form-actions .btn { width: 100%; }
+            .meeting-card-actions { flex-wrap: wrap; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar" id="navbar">
+        <a href="/welcome.html" class="navbar-brand">
+            <img src="images/learnx-logo.svg" alt="LearnX Meets">
+        </a>
+        <div class="navbar-right">
+            <span class="navbar-time" id="navClock"></span>
+            <a href="/login.html" class="btn nav-login-btn" id="loginBtn" style="padding:8px 18px;border-radius:10px;font-size:13px;font-weight:500;background:white;color:#7c3aed;border:1.5px solid rgba(124,58,237,0.15);text-decoration:none;transition:all 0.25s;">Sign In</a>
+            <div class="user-badge-wrap" id="userBadgeWrap">
+                <div class="user-badge" onclick="toggleUserDropdown(event)">
+                    <div class="avatar" id="userAvatar">?</div>
+                    <span id="userName">User</span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+                <div class="user-dropdown" id="userDropdown">
+                    <div class="dropdown-user-info">
+                        <div class="name" id="dropdownName">User</div>
+                        <div class="email" id="dropdownEmail">user@example.com</div>
+                        <span class="role-badge" id="dropdownRole">User</span>
+                    </div>
+                    <button class="user-dropdown-item" onclick="window.location.href='/welcome.html'">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                        Home
+                    </button>
+                    <button class="user-dropdown-item danger" onclick="logout()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                        Sign Out
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Toast container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Main content -->
+    <div class="main-content" id="mainContent">
+        <div class="page-header">
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px">
+                <h1 id="pageTitle">My Meetings</h1>
+                <button class="btn btn-primary" id="newMeetingBtn" onclick="switchTab('create')" style="padding:10px 22px;font-size:13px;border-radius:10px;box-shadow:0 2px 12px rgba(124,58,237,0.25)">
+                    <svg style="width:14px;height:14px;margin-right:5px;vertical-align:-2px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    New Meeting
+                </button>
+            </div>
+        </div>
+
+        <!-- TAB: My Meetings -->
+        <div class="tab-content active" id="tabMeetings" style="max-width:1200px;margin:0 auto;padding:0 40px 60px">
+            <!-- Filter bar -->
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:20px;flex-wrap:wrap">
+                <button class="filter-btn active" data-filter="all" onclick="filterMeetings('all')">All</button>
+                <button class="filter-btn" data-filter="SCHEDULED" onclick="filterMeetings('SCHEDULED')">Scheduled</button>
+                <button class="filter-btn" data-filter="IN_PROGRESS" onclick="filterMeetings('IN_PROGRESS')">In Progress</button>
+                <button class="filter-btn" data-filter="COMPLETED" onclick="filterMeetings('COMPLETED')">Completed</button>
+                <button class="filter-btn" data-filter="CANCELLED" onclick="filterMeetings('CANCELLED')">Cancelled</button>
+            </div>
+
+            <!-- Meetings list -->
+            <div id="meetingsLoading" style="text-align:center;padding:40px;color:var(--text-secondary)">Loading meetings...</div>
+            <div id="meetingsEmpty" style="display:none;text-align:center;padding:60px 20px">
+                <svg style="width:48px;height:48px;color:#cbd5e1;margin-bottom:16px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+                <p style="font-size:16px;font-weight:600;color:var(--text);margin-bottom:4px">No meetings yet</p>
+                <p style="font-size:14px;color:var(--text-secondary)">Click "New Meeting" above to create your first meeting</p>
+            </div>
+            <div id="meetingsList" class="meetings-grid"></div>
+
+            <!-- Pagination -->
+            <div id="meetingsPagination" style="display:none;text-align:center;padding:20px">
+                <button class="btn btn-secondary" id="loadMoreBtn" onclick="loadMoreMeetings()" style="padding:10px 32px;border-radius:10px;font-size:13px">Load More</button>
+            </div>
+        </div>
+
+        <!-- TAB: Create Meeting -->
+        <div class="tab-content" id="tabCreate">
+        <div class="layout">
+            <!-- LEFT COLUMN: Form -->
+            <div class="left-column">
+                <!-- Section 1: Meeting Details -->
+                <div class="card">
+                    <div class="card-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+                        Meeting Details
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="meetingTitle">Title <span style="color:#ef4444">*</span></label>
+                        <input type="text" id="meetingTitle" class="form-input" placeholder="e.g. Weekly Team Standup" required maxlength="200">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="meetingDescription">Description</label>
+                        <textarea id="meetingDescription" class="form-textarea" placeholder="Optional meeting description or agenda..." maxlength="2000"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="meetingType">Meeting Type</label>
+                        <select id="meetingType" class="form-select">
+                            <option value="GROUP">Group</option>
+                            <option value="ONE_ON_ONE">One-on-One</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Section 2: Schedule -->
+                <div class="card">
+                    <div class="card-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        Schedule
+                    </div>
+                    <div class="toggle-row" style="margin-bottom:16px">
+                        <label class="toggle-label" for="instantMeeting" style="font-weight:600">Start instantly</label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="instantMeeting" onchange="toggleInstantMeeting(this.checked)">
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span class="form-hint" style="margin:0 0 0 8px">Skip scheduling — meeting starts now</span>
+                    </div>
+                    <div id="scheduleDateTimeGroup">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="meetingDate">Date</label>
+                            <input type="date" id="meetingDate" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="meetingTime">Time</label>
+                            <input type="time" id="meetingTime" class="form-input">
+                        </div>
+                    </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="meetingDuration">Duration</label>
+                            <select id="meetingDuration" class="form-select">
+                                <option value="15">15 minutes</option>
+                                <option value="30">30 minutes</option>
+                                <option value="45">45 minutes</option>
+                                <option value="60" selected>1 hour</option>
+                                <option value="90">1.5 hours</option>
+                                <option value="120">2 hours</option>
+                                <option value="180">3 hours</option>
+                                <option value="240">4 hours</option>
+                                <option value="custom">Custom</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="customDurationGroup" style="display:none">
+                            <label class="form-label" for="customDuration">Custom (minutes)</label>
+                            <input type="number" id="customDuration" class="form-input" min="5" max="480" placeholder="e.g. 75">
+                        </div>
+                    </div>
+                    <p class="form-hint" id="timezoneLabel"></p>
+                </div>
+
+                <!-- Section 3: Access & Privacy -->
+                <div class="card">
+                    <div class="card-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                        Access &amp; Privacy
+                    </div>
+                    <div class="access-selector">
+                        <div class="access-option active" id="accessPublic" onclick="setAccess(true)">
+                            <div class="access-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+                            </div>
+                            <div class="access-option-label">Public</div>
+                        </div>
+                        <div class="access-option" id="accessPrivate" onclick="setAccess(false)">
+                            <div class="access-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                            </div>
+                            <div class="access-option-label">Private</div>
+                        </div>
+                    </div>
+                    <div class="access-info" id="accessInfo">Anyone with the link can join this meeting</div>
+                </div>
+
+                <!-- Section 4: Participants -->
+                <div class="card">
+                    <div class="card-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+                        <span id="participantsLabel">Send invitation to (optional)</span>
+                    </div>
+                    <div class="participant-input-row">
+                        <input type="email" id="participantEmail" class="form-input" placeholder="Email address *" style="flex:2" onkeydown="if(event.key==='Enter'){event.preventDefault();addParticipant();}">
+                        <input type="text" id="participantName" class="form-input" placeholder="Full name (optional)" style="flex:1.5" onkeydown="if(event.key==='Enter'){event.preventDefault();addParticipant();}">
+                        <select id="participantRole" class="form-select" style="flex:0.8;min-width:120px">
+                            <option value="PARTICIPANT">Participant</option>
+                            <option value="CO_HOST">Co-Host</option>
+                        </select>
+                        <button type="button" class="btn-add" onclick="addParticipant()">Add</button>
+                    </div>
+                    <div class="chips-container" id="participantChips"></div>
+                </div>
+
+                <!-- Section 5: Meeting Settings (collapsible) -->
+                <div class="card">
+                    <div class="collapsible-header" id="settingsToggle" onclick="toggleSettings()">
+                        <div class="card-title" style="margin-bottom:0">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.32 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+                            Meeting Settings
+                        </div>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                    </div>
+                    <div class="collapsible-body" id="settingsBody">
+                        <div class="toggle-row">
+                            <div class="toggle-label">Recording<small>Allow meeting to be recorded</small></div>
+                            <label class="toggle-switch"><input type="checkbox" id="settingRecording"><span class="toggle-slider"></span></label>
+                        </div>
+                        <div class="toggle-row">
+                            <div class="toggle-label">Auto-record<small>Start recording when host joins</small></div>
+                            <label class="toggle-switch"><input type="checkbox" id="settingAutoRecord"><span class="toggle-slider"></span></label>
+                        </div>
+                        <div class="toggle-row">
+                            <div class="toggle-label">Chat<small>Enable in-meeting chat</small></div>
+                            <label class="toggle-switch"><input type="checkbox" id="settingChat" checked><span class="toggle-slider"></span></label>
+                        </div>
+                        <div class="toggle-row">
+                            <div class="toggle-label">Screen sharing<small>Allow participants to share screen</small></div>
+                            <label class="toggle-switch"><input type="checkbox" id="settingScreenShare" checked><span class="toggle-slider"></span></label>
+                        </div>
+                        <div class="toggle-row">
+                            <div class="toggle-label">Whiteboard<small>Enable collaborative whiteboard</small></div>
+                            <label class="toggle-switch"><input type="checkbox" id="settingWhiteboard" checked><span class="toggle-slider"></span></label>
+                        </div>
+                        <div class="toggle-row">
+                            <div class="toggle-label">Lobby / Waiting room<small>Participants wait for host approval</small></div>
+                            <label class="toggle-switch"><input type="checkbox" id="settingLobby"><span class="toggle-slider"></span></label>
+                        </div>
+                        <div class="toggle-row">
+                            <div class="toggle-label">Start with audio muted<small>Mute microphone on join</small></div>
+                            <label class="toggle-switch"><input type="checkbox" id="settingMuteOnJoin"><span class="toggle-slider"></span></label>
+                        </div>
+                        <div class="toggle-row">
+                            <div class="toggle-label">Start with video off<small>Disable camera on join</small></div>
+                            <label class="toggle-switch"><input type="checkbox" id="settingVideoOff"><span class="toggle-slider"></span></label>
+                        </div>
+                        <div class="toggle-row">
+                            <div class="toggle-label">Breakout rooms<small>Enable breakout room creation</small></div>
+                            <label class="toggle-switch"><input type="checkbox" id="settingBreakout"><span class="toggle-slider"></span></label>
+                        </div>
+                        <div class="toggle-row" style="border-top:1px solid rgba(124,58,237,0.06);padding-top:16px;margin-top:8px">
+                            <div class="toggle-label" style="font-weight:700;color:var(--text)">Participant Permissions</div>
+                        </div>
+                        <div class="toggle-row">
+                            <div class="toggle-label">Allow screen sharing<small>Participants can share their screen</small></div>
+                            <label class="toggle-switch"><input type="checkbox" id="settingAllowScreenShare" checked><span class="toggle-slider"></span></label>
+                        </div>
+                        <div class="toggle-row">
+                            <div class="toggle-label">Allow recording<small>Participants can start recording</small></div>
+                            <label class="toggle-switch"><input type="checkbox" id="settingAllowRecording"><span class="toggle-slider"></span></label>
+                        </div>
+                        <div class="toggle-row">
+                            <div class="toggle-label">Allow end meeting<small>Participants can end the meeting</small></div>
+                            <label class="toggle-switch"><input type="checkbox" id="settingAllowEndMeeting"><span class="toggle-slider"></span></label>
+                        </div>
+                        <div class="toggle-row">
+                            <div class="toggle-label">Allow mute others<small>Participants can mute other users</small></div>
+                            <label class="toggle-switch"><input type="checkbox" id="settingAllowMuteOthers"><span class="toggle-slider"></span></label>
+                        </div>
+                        <div class="toggle-row">
+                            <div class="toggle-label">Allow remove others<small>Participants can remove other users</small></div>
+                            <label class="toggle-switch"><input type="checkbox" id="settingAllowRemoveOthers"><span class="toggle-slider"></span></label>
+                        </div>
+                        <div class="toggle-row" style="border-top:1px solid rgba(124,58,237,0.04)">
+                            <div class="toggle-label">Max participants<small>Leave empty for unlimited</small></div>
+                            <input type="number" id="settingMaxParticipants" class="form-input" style="width:100px;padding:8px 12px;text-align:center" min="2" max="500" placeholder="--">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 6: Notification Options -->
+                <div class="card">
+                    <div class="card-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+                        Notifications
+                    </div>
+                    <div class="checkbox-row">
+                        <input type="checkbox" id="notifEmail" checked>
+                        <label for="notifEmail">Send email invitation with calendar (.ics) file</label>
+                    </div>
+                    <div class="checkbox-row">
+                        <input type="checkbox" id="notifCopyLink">
+                        <label for="notifCopyLink">Copy invite link after creation</label>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="switchTab('meetings')">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="createBtn" onclick="createMeeting()">
+                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+                        Create Meeting
+                    </button>
+                </div>
+            </div>
+
+            <!-- RIGHT COLUMN -->
+            <div class="right-column">
+                <!-- Mini Calendar -->
+                <div class="card" id="calendarCard">
+                    <div class="calendar" id="miniCalendar"></div>
+                </div>
+
+                <!-- Schedule Summary -->
+                <div class="card">
+                    <div class="card-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                        Schedule Summary
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-item-label">Date</span>
+                        <span class="summary-item-value" id="summaryDate">Not set</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-item-label">Time</span>
+                        <span class="summary-item-value" id="summaryTime">Not set</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-item-label">Duration</span>
+                        <span class="summary-item-value" id="summaryDuration">1 hour</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-item-label">Ends at</span>
+                        <span class="summary-item-value" id="summaryEndTime">--</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-item-label">Access</span>
+                        <span id="summaryAccess"><span class="badge-public">Public</span></span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-item-label">Participants</span>
+                        <span class="summary-item-value" id="summaryParticipants">0</span>
+                    </div>
+                </div>
+
+                <!-- Invite Preview -->
+                <div class="card invite-preview" id="invitePreview">
+                    <div class="card-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                        Invite Preview
+                    </div>
+                    <ul class="invite-list" id="inviteList"></ul>
+                    <p class="invite-summary-text" id="inviteSummaryText"></p>
+                </div>
+            </div>
+        </div>
+        </div> <!-- /tabCreate -->
+    </div>
+
+    <!-- Success Overlay -->
+    <div class="success-overlay" id="successOverlay">
+        <div class="success-card">
+            <div class="success-icon">
+                <svg viewBox="0 0 24 24"><polyline points="6 12 10 16 18 8"/></svg>
+            </div>
+            <h2>Meeting Created!</h2>
+            <p class="success-subtitle" id="successTitle"></p>
+            <div class="success-url-box">
+                <input type="text" id="successUrl" readonly>
+                <button class="btn-copy" onclick="copySuccessUrl()">Copy</button>
+            </div>
+            <div class="success-actions">
+                <a href="#" class="btn btn-success-primary" id="joinNowBtn">Join Now</a>
+                <button class="btn btn-success-secondary" onclick="createAnother()">Create Another</button>
+                <button class="btn btn-success-secondary" onclick="document.getElementById('successOverlay').classList.remove('show');switchTab('meetings');loadMyMeetings();">My Meetings</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        'use strict';
+
+        // ---- Service URL detection ----
+        var getGatewayBase = function() {
+            var h = window.location.hostname;
+            return window.location.protocol + '//' + h.replace('meet.', '');
+        };
+        var getMeetingServiceUrl = function() {
+            if (window.MEETING_SERVICE_URL) return window.MEETING_SERVICE_URL;
+            return getGatewayBase() + '/meeting-service';
+        };
+        var getAuthServiceUrl = function() {
+            if (window.AUTH_SERVICE_URL) return window.AUTH_SERVICE_URL;
+            return getGatewayBase() + '/auth-service';
+        };
+
+        var MEETING_URL = getMeetingServiceUrl();
+        var AUTH_URL = getAuthServiceUrl();
+
+        // ---- Token helpers ----
+        var TOKEN_KEY = window.LEARNX_TOKEN_KEY || 'learnx_access_token';
+        var REFRESH_KEY = window.LEARNX_REFRESH_KEY || 'learnx_refresh_token';
+
+        var getJwtToken = function() {
+            return sessionStorage.getItem(TOKEN_KEY) || localStorage.getItem(TOKEN_KEY);
+        };
+        var getRefreshToken = function() {
+            return sessionStorage.getItem(REFRESH_KEY) || localStorage.getItem(REFRESH_KEY);
+        };
+
+        function storeTokens(accessToken, refreshToken) {
+            if (accessToken) {
+                sessionStorage.setItem(TOKEN_KEY, accessToken);
+                localStorage.setItem(TOKEN_KEY, accessToken);
+            }
+            if (refreshToken) {
+                sessionStorage.setItem(REFRESH_KEY, refreshToken);
+                localStorage.setItem(REFRESH_KEY, refreshToken);
+            }
+        }
+
+        function clearTokens() {
+            sessionStorage.removeItem(TOKEN_KEY);
+            localStorage.removeItem(TOKEN_KEY);
+            sessionStorage.removeItem(REFRESH_KEY);
+            localStorage.removeItem(REFRESH_KEY);
+        }
+
+        function parseJwt(token) {
+            try {
+                var base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+                return JSON.parse(atob(base64));
+            } catch (e) { return null; }
+        }
+
+        function isTokenExpired(payload) {
+            if (!payload || !payload.exp) return true;
+            return (payload.exp * 1000) < Date.now();
+        }
+
+        async function refreshAccessToken() {
+            var refreshToken = getRefreshToken();
+            if (!refreshToken) return null;
+            try {
+                var resp = await fetch(AUTH_URL + '/auth/token/refresh', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ refreshToken: refreshToken })
+                });
+                if (resp.ok) {
+                    var data = await resp.json();
+                    var newToken = data.access_token;
+                    if (newToken) {
+                        storeTokens(newToken, data.refresh_token || null);
+                        return newToken;
+                    }
+                }
+            } catch (e) { /* refresh failed */ }
+            return null;
+        }
+
+        async function getValidToken() {
+            var token = getJwtToken();
+            if (!token) return null;
+            var payload = parseJwt(token);
+            if (payload && !isTokenExpired(payload)) return token;
+            var newToken = await refreshAccessToken();
+            if (newToken) return newToken;
+            clearTokens();
+            return null;
+        }
+
+        function getRoles(payload) {
+            if (!payload) return [];
+            var realmRoles = (payload.realm_access && payload.realm_access.roles) || [];
+            var resourceRoles = payload.resource_access
+                ? Object.values(payload.resource_access).flatMap(function(r) { return r.roles || []; })
+                : [];
+            return realmRoles.concat(resourceRoles).map(function(r) { return r.toUpperCase(); });
+        }
+
+        function getUserName(payload) {
+            return payload.name || payload.preferred_username || payload.given_name || payload.email || 'User';
+        }
+
+        function getUserEmail(payload) {
+            return payload.email || payload.preferred_username || '';
+        }
+
+        function getInitials(name) {
+            if (!name) return '?';
+            var parts = name.trim().split(/\s+/);
+            if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+            return name.substring(0, 2).toUpperCase();
+        }
+
+        function getHighestRole(roles) {
+            if (roles.includes('ADMIN')) return 'Admin';
+            if (roles.includes('MODERATOR')) return 'Moderator';
+            if (roles.includes('TEACHER')) return 'Teacher';
+            if (roles.includes('STUDENT')) return 'Student';
+            return 'User';
+        }
+
+        // ---- XSS helpers ----
+        function escapeHtml(str) {
+            var div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function escapeJsAttr(str) {
+            if (!str) return '';
+            return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        }
+
+        // ---- Toast ----
+        function showToast(msg, type) {
+            var container = document.getElementById('toastContainer');
+            var toast = document.createElement('div');
+            toast.className = 'toast' + (type ? ' ' + type : '');
+            toast.textContent = msg;
+            container.appendChild(toast);
+            setTimeout(function() { toast.remove(); }, 3200);
+        }
+        window.showToast = showToast;
+
+        // ---- Clock ----
+        function updateClock() {
+            var now = new Date();
+            var el = document.getElementById('navClock');
+            if (el) {
+                el.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            }
+        }
+        updateClock();
+        setInterval(updateClock, 30000);
+
+        // ---- Navbar scroll ----
+        window.addEventListener('scroll', function() {
+            document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 10);
+        });
+
+        // ---- User dropdown ----
+        window.toggleUserDropdown = function(e) {
+            e.stopPropagation();
+            document.getElementById('userDropdown').classList.toggle('open');
+        };
+        document.addEventListener('click', function(e) {
+            var dropdown = document.getElementById('userDropdown');
+            if (dropdown && !e.target.closest('.user-badge-wrap')) {
+                dropdown.classList.remove('open');
+            }
+        });
+
+        // ---- Logout ----
+        window.logout = async function() {
+            var token = getJwtToken();
+            if (token) {
+                try { await fetch(AUTH_URL + '/auth/logout', { headers: { 'Authorization': 'Bearer ' + token } }); } catch (e) {}
+            }
+            clearTokens();
+            window.location.href = '/welcome.html';
+        };
+
+        // ---- Auth check ----
+        var currentPayload = null;
+        var isAdmin = false;
+
+        (async function initAuth() {
+            var token = getJwtToken();
+            var payload = token ? parseJwt(token) : null;
+
+            if (token && payload && !isTokenExpired(payload)) {
+                // valid
+            } else if (token) {
+                token = await refreshAccessToken();
+                payload = token ? parseJwt(token) : null;
+            }
+
+            if (!token || !payload) {
+                clearTokens();
+                window.location.href = '/login.html?returnUrl=/schedule.html';
+                return;
+            }
+
+            currentPayload = payload;
+            var roles = getRoles(payload);
+            isAdmin = roles.includes('ADMIN') || roles.includes('MODERATOR') || roles.includes('TEACHER');
+
+            if (!isAdmin) {
+                window.location.href = '/welcome.html';
+                return;
+            }
+
+            // Show user badge
+            document.getElementById('loginBtn').style.display = 'none';
+            var badgeWrap = document.getElementById('userBadgeWrap');
+            badgeWrap.classList.add('show');
+
+            var name = getUserName(payload);
+            var email = getUserEmail(payload);
+            var highestRole = getHighestRole(roles);
+
+            document.getElementById('userName').textContent = name;
+            document.getElementById('userAvatar').textContent = getInitials(name);
+            document.getElementById('dropdownName').textContent = name;
+            document.getElementById('dropdownEmail').textContent = email;
+            document.getElementById('dropdownRole').textContent = highestRole;
+        })();
+
+        // ---- State ----
+        var participants = []; // [{email, role}]
+        var isPublic = true;
+        var calendarDate = new Date();  // currently displayed month
+        var selectedDate = null;        // Date object for selected date
+
+        // ---- Timezone display ----
+        (function showTimezone() {
+            try {
+                var tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                var offset = new Date().getTimezoneOffset();
+                var sign = offset <= 0 ? '+' : '-';
+                var absOffset = Math.abs(offset);
+                var hrs = Math.floor(absOffset / 60);
+                var mins = absOffset % 60;
+                var label = 'UTC' + sign + String(hrs).padStart(2, '0') + ':' + String(mins).padStart(2, '0');
+                if (tz) label += ' (' + tz + ')';
+                document.getElementById('timezoneLabel').textContent = 'Timezone: ' + label;
+            } catch (e) {
+                document.getElementById('timezoneLabel').textContent = '';
+            }
+        })();
+
+        // ---- Set initial date/time ----
+        (function setDefaults() {
+            var now = new Date();
+            // Round up to next 30 min
+            now.setMinutes(now.getMinutes() + 30 - (now.getMinutes() % 30), 0, 0);
+            var dateStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+            var timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+            document.getElementById('meetingDate').value = dateStr;
+            document.getElementById('meetingDate').min = dateStr;
+            document.getElementById('meetingTime').value = timeStr;
+            selectedDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            calendarDate = new Date(now.getFullYear(), now.getMonth(), 1);
+            updateSummary();
+        })();
+
+        // ---- Duration custom toggle ----
+        document.getElementById('meetingDuration').addEventListener('change', function() {
+            var isCustom = this.value === 'custom';
+            document.getElementById('customDurationGroup').style.display = isCustom ? '' : 'none';
+            updateSummary();
+        });
+        document.getElementById('customDuration').addEventListener('input', updateSummary);
+        document.getElementById('meetingDate').addEventListener('change', function() {
+            var parts = this.value.split('-');
+            if (parts.length === 3) {
+                selectedDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+                calendarDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, 1);
+                renderCalendar();
+            }
+            updateSummary();
+        });
+        document.getElementById('meetingTime').addEventListener('change', updateSummary);
+
+        // ---- Access toggle ----
+        window.setAccess = function(pub) {
+            isPublic = pub;
+            document.getElementById('accessPublic').classList.toggle('active', pub);
+            document.getElementById('accessPrivate').classList.toggle('active', !pub);
+            if (pub) {
+                document.getElementById('accessInfo').textContent = 'Anyone with the link can join this meeting';
+                document.getElementById('participantsLabel').textContent = 'Send invitation to (optional)';
+            } else {
+                document.getElementById('accessInfo').textContent = 'Only invited participants can join this meeting';
+                document.getElementById('participantsLabel').textContent = 'Invite participants (required for access)';
+            }
+            updateSummary();
+        };
+
+        // ---- Participants ----
+        window.addParticipant = function() {
+            var emailInput = document.getElementById('participantEmail');
+            var nameInput = document.getElementById('participantName');
+            var roleSelect = document.getElementById('participantRole');
+            var email = emailInput.value.trim().toLowerCase();
+            if (!email) return;
+
+            // Basic email validation
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                showToast('Please enter a valid email address', 'error');
+                return;
+            }
+            // Check duplicate
+            if (participants.some(function(p) { return p.email === email; })) {
+                showToast('This participant has already been added', 'error');
+                return;
+            }
+
+            var fullName = nameInput.value.trim() || null;
+            var role = roleSelect.value;
+            participants.push({ email: email, fullName: fullName, role: role });
+            emailInput.value = '';
+            nameInput.value = '';
+            roleSelect.value = 'PARTICIPANT';
+            emailInput.focus();
+            renderParticipants();
+            updateSummary();
+        };
+
+        function removeParticipant(idx) {
+            participants.splice(idx, 1);
+            renderParticipants();
+            updateSummary();
+        }
+        window.removeParticipant = removeParticipant;
+
+        function toggleRole(idx) {
+            if (participants[idx].role === 'PARTICIPANT') {
+                participants[idx].role = 'CO_HOST';
+            } else {
+                participants[idx].role = 'PARTICIPANT';
+            }
+            renderParticipants();
+            updateInvitePreview();
+        }
+        window.toggleRole = toggleRole;
+
+        function renderParticipants() {
+            var container = document.getElementById('participantChips');
+            container.innerHTML = '';
+            participants.forEach(function(p, i) {
+                var chip = document.createElement('div');
+                chip.className = 'chip';
+
+                var infoSpan = document.createElement('span');
+                infoSpan.textContent = p.fullName ? (p.fullName + ' (' + p.email + ')') : p.email;
+                chip.appendChild(infoSpan);
+
+                var roleBtn = document.createElement('button');
+                roleBtn.className = 'chip-role' + (p.role === 'CO_HOST' ? ' co-host' : '');
+                roleBtn.textContent = p.role === 'CO_HOST' ? 'Co-Host' : 'Participant';
+                roleBtn.title = 'Click to toggle role';
+                roleBtn.setAttribute('data-idx', String(i));
+                roleBtn.addEventListener('click', function() { toggleRole(parseInt(this.getAttribute('data-idx'))); });
+                chip.appendChild(roleBtn);
+
+                var removeBtn = document.createElement('button');
+                removeBtn.className = 'chip-remove';
+                removeBtn.title = 'Remove';
+                removeBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+                removeBtn.setAttribute('data-idx', String(i));
+                removeBtn.addEventListener('click', function() { removeParticipant(parseInt(this.getAttribute('data-idx'))); });
+                chip.appendChild(removeBtn);
+
+                container.appendChild(chip);
+            });
+            updateInvitePreview();
+        }
+
+        function updateInvitePreview() {
+            var preview = document.getElementById('invitePreview');
+            var list = document.getElementById('inviteList');
+            var summaryText = document.getElementById('inviteSummaryText');
+
+            if (participants.length === 0) {
+                preview.classList.remove('show');
+                return;
+            }
+            preview.classList.add('show');
+            list.innerHTML = '';
+            participants.forEach(function(p) {
+                var li = document.createElement('li');
+                var emailSpan = document.createElement('span');
+                emailSpan.className = 'invite-email';
+                emailSpan.textContent = p.email;
+                li.appendChild(emailSpan);
+
+                var roleTag = document.createElement('span');
+                roleTag.className = 'invite-role-tag';
+                roleTag.textContent = p.role === 'CO_HOST' ? 'Co-Host' : 'Participant';
+                li.appendChild(roleTag);
+
+                list.appendChild(li);
+            });
+
+            var count = participants.length;
+            summaryText.textContent = count + ' participant' + (count !== 1 ? 's' : '') + ' will receive email invitations with calendar file';
+        }
+
+        // ---- Collapsible settings ----
+        window.toggleSettings = function() {
+            var header = document.getElementById('settingsToggle');
+            var body = document.getElementById('settingsBody');
+            header.classList.toggle('open');
+            body.classList.toggle('open');
+        };
+
+        // ---- Summary ----
+        function getDurationMinutes() {
+            var sel = document.getElementById('meetingDuration');
+            if (sel.value === 'custom') {
+                var val = parseInt(document.getElementById('customDuration').value);
+                return isNaN(val) || val < 5 ? 60 : val;
+            }
+            return parseInt(sel.value);
+        }
+
+        function formatDuration(mins) {
+            if (mins < 60) return mins + ' min';
+            var hrs = Math.floor(mins / 60);
+            var rem = mins % 60;
+            if (rem === 0) return hrs + ' hour' + (hrs > 1 ? 's' : '');
+            return hrs + 'h ' + rem + 'm';
+        }
+
+        function formatTime12(h, m) {
+            var ampm = h >= 12 ? 'PM' : 'AM';
+            var hh = h % 12 || 12;
+            return hh + ':' + String(m).padStart(2, '0') + ' ' + ampm;
+        }
+
+        function updateSummary() {
+            var dateVal = document.getElementById('meetingDate').value;
+            var timeVal = document.getElementById('meetingTime').value;
+            var duration = getDurationMinutes();
+
+            // Date
+            if (dateVal) {
+                var dp = dateVal.split('-');
+                var d = new Date(parseInt(dp[0]), parseInt(dp[1]) - 1, parseInt(dp[2]));
+                document.getElementById('summaryDate').textContent = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+            } else {
+                document.getElementById('summaryDate').textContent = 'Not set';
+            }
+
+            // Time
+            if (timeVal) {
+                var tp = timeVal.split(':');
+                document.getElementById('summaryTime').textContent = formatTime12(parseInt(tp[0]), parseInt(tp[1]));
+            } else {
+                document.getElementById('summaryTime').textContent = 'Not set';
+            }
+
+            // Duration
+            document.getElementById('summaryDuration').textContent = formatDuration(duration);
+
+            // End time
+            if (timeVal) {
+                var tp2 = timeVal.split(':');
+                var totalMin = parseInt(tp2[0]) * 60 + parseInt(tp2[1]) + duration;
+                var endH = Math.floor(totalMin / 60) % 24;
+                var endM = totalMin % 60;
+                document.getElementById('summaryEndTime').textContent = formatTime12(endH, endM);
+            } else {
+                document.getElementById('summaryEndTime').textContent = '--';
+            }
+
+            // Access
+            var accessEl = document.getElementById('summaryAccess');
+            if (isPublic) {
+                accessEl.innerHTML = '<span class="badge-public">Public</span>';
+            } else {
+                accessEl.innerHTML = '<span class="badge-private">Private</span>';
+            }
+
+            // Participants
+            document.getElementById('summaryParticipants').textContent = String(participants.length);
+        }
+
+        // ---- Mini Calendar ----
+        var MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        var DOW = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+
+        function renderCalendar() {
+            var container = document.getElementById('miniCalendar');
+            container.innerHTML = '';
+
+            var year = calendarDate.getFullYear();
+            var month = calendarDate.getMonth();
+            var today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            // Nav
+            var nav = document.createElement('div');
+            nav.className = 'calendar-nav';
+
+            var prevBtn = document.createElement('button');
+            prevBtn.className = 'calendar-nav-btn';
+            prevBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>';
+            prevBtn.addEventListener('click', function() {
+                calendarDate.setMonth(calendarDate.getMonth() - 1);
+                renderCalendar();
+            });
+
+            var title = document.createElement('span');
+            title.className = 'calendar-nav-title';
+            title.textContent = MONTH_NAMES[month] + ' ' + year;
+
+            var nextBtn = document.createElement('button');
+            nextBtn.className = 'calendar-nav-btn';
+            nextBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>';
+            nextBtn.addEventListener('click', function() {
+                calendarDate.setMonth(calendarDate.getMonth() + 1);
+                renderCalendar();
+            });
+
+            nav.appendChild(prevBtn);
+            nav.appendChild(title);
+            nav.appendChild(nextBtn);
+            container.appendChild(nav);
+
+            // Grid
+            var grid = document.createElement('div');
+            grid.className = 'calendar-grid';
+
+            // Day of week headers
+            DOW.forEach(function(d) {
+                var el = document.createElement('div');
+                el.className = 'calendar-dow';
+                el.textContent = d;
+                grid.appendChild(el);
+            });
+
+            // First day of month
+            var firstDay = new Date(year, month, 1).getDay();
+            var daysInMonth = new Date(year, month + 1, 0).getDate();
+            var daysInPrevMonth = new Date(year, month, 0).getDate();
+
+            // Previous month days
+            for (var i = firstDay - 1; i >= 0; i--) {
+                var btn = document.createElement('button');
+                btn.className = 'calendar-day other-month';
+                btn.textContent = String(daysInPrevMonth - i);
+                btn.disabled = true;
+                grid.appendChild(btn);
+            }
+
+            // Current month days
+            for (var d = 1; d <= daysInMonth; d++) {
+                var btn = document.createElement('button');
+                btn.className = 'calendar-day';
+                btn.textContent = String(d);
+
+                var thisDate = new Date(year, month, d);
+                thisDate.setHours(0, 0, 0, 0);
+
+                // Check if past
+                if (thisDate < today) {
+                    btn.classList.add('past');
+                    btn.disabled = true;
+                } else {
+                    // Check today
+                    if (thisDate.getTime() === today.getTime()) {
+                        btn.classList.add('today');
+                    }
+                    // Check selected
+                    if (selectedDate && thisDate.getTime() === selectedDate.getTime()) {
+                        btn.classList.add('selected');
+                    }
+                    btn.setAttribute('data-day', String(d));
+                    btn.addEventListener('click', function() {
+                        var day = parseInt(this.getAttribute('data-day'));
+                        selectedDate = new Date(year, month, day);
+                        var dateStr = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+                        document.getElementById('meetingDate').value = dateStr;
+                        renderCalendar();
+                        updateSummary();
+                    });
+                }
+
+                grid.appendChild(btn);
+            }
+
+            // Next month days to fill row
+            var totalCells = firstDay + daysInMonth;
+            var remaining = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+            for (var i = 1; i <= remaining; i++) {
+                var btn = document.createElement('button');
+                btn.className = 'calendar-day other-month';
+                btn.textContent = String(i);
+                btn.disabled = true;
+                grid.appendChild(btn);
+            }
+
+            container.appendChild(grid);
+        }
+
+        renderCalendar();
+
+        // ---- Instant Meeting Toggle ----
+        window.toggleInstantMeeting = function(checked) {
+            var group = document.getElementById('scheduleDateTimeGroup');
+            group.style.display = checked ? 'none' : '';
+        };
+
+        // ---- Create Meeting ----
+        window.createMeeting = async function() {
+            var titleVal = document.getElementById('meetingTitle').value.trim();
+            if (!titleVal) {
+                showToast('Please enter a meeting title', 'error');
+                document.getElementById('meetingTitle').focus();
+                return;
+            }
+
+            var isInstant = document.getElementById('instantMeeting').checked;
+            var dateVal = document.getElementById('meetingDate').value;
+            var timeVal = document.getElementById('meetingTime').value;
+            if (!isInstant && (!dateVal || !timeVal)) {
+                showToast('Please set a date and time', 'error');
+                return;
+            }
+
+            // Private meetings need participants
+            if (!isPublic && participants.length === 0) {
+                showToast('Private meetings require at least one participant', 'error');
+                document.getElementById('participantEmail').focus();
+                return;
+            }
+
+            var token = await getValidToken();
+            if (!token) {
+                clearTokens();
+                window.location.href = '/login.html?returnUrl=/schedule.html';
+                return;
+            }
+
+            var createBtn = document.getElementById('createBtn');
+            createBtn.disabled = true;
+            createBtn.innerHTML = '<span class="spinner-small"></span> Creating...';
+
+            var duration = getDurationMinutes();
+            var actualType = document.getElementById('meetingType').value;
+            var actualPublic = isPublic;
+
+            var scheduledAt = isInstant ? null : (dateVal + 'T' + timeVal + ':00');
+
+            var maxParticipants = parseInt(document.getElementById('settingMaxParticipants').value);
+
+            var body = {
+                title: titleVal,
+                description: document.getElementById('meetingDescription').value.trim() || null,
+                meetingType: actualType,
+                scheduledAt: scheduledAt,
+                maxParticipants: isNaN(maxParticipants) ? null : maxParticipants,
+                isPublic: actualPublic,
+                durationMinutes: duration,
+                participants: participants.map(function(p) { return { email: p.email, fullName: p.fullName || null, role: p.role }; }),
+                settings: {
+                    recordingEnabled: document.getElementById('settingRecording').checked,
+                    chatEnabled: document.getElementById('settingChat').checked,
+                    whiteboardEnabled: document.getElementById('settingWhiteboard').checked,
+                    screenShareEnabled: document.getElementById('settingScreenShare').checked,
+                    lobbyEnabled: document.getElementById('settingLobby').checked,
+                    autoRecord: document.getElementById('settingAutoRecord').checked,
+                    muteOnJoin: document.getElementById('settingMuteOnJoin').checked,
+                    videoOffOnJoin: document.getElementById('settingVideoOff').checked,
+                    allowParticipantScreenShare: document.getElementById('settingAllowScreenShare').checked,
+                    allowParticipantRecording: document.getElementById('settingAllowRecording').checked,
+                    allowParticipantEndMeeting: document.getElementById('settingAllowEndMeeting').checked,
+                    allowParticipantMuteOthers: document.getElementById('settingAllowMuteOthers').checked,
+                    allowParticipantRemoveOthers: document.getElementById('settingAllowRemoveOthers').checked
+                }
+            };
+
+            try {
+                var resp = await fetch(MEETING_URL + '/meetings', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify(body)
+                });
+
+                if (resp.status === 401) {
+                    clearTokens();
+                    window.location.href = '/login.html?returnUrl=/schedule.html';
+                    return;
+                }
+
+                if (resp.status === 403) {
+                    showToast('Access denied. Only administrators can create meetings.', 'error');
+                    createBtn.disabled = false;
+                    createBtn.innerHTML = '<svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg> Create Meeting';
+                    return;
+                }
+
+                if (!resp.ok) {
+                    var errText = await resp.text();
+                    var errMsg = 'Failed to create meeting. Please try again.';
+                    try {
+                        var errJson = JSON.parse(errText);
+                        errMsg = errJson.message || errJson.error || errMsg;
+                    } catch (e) {
+                        if (errText) errMsg = errText;
+                    }
+                    showToast(errMsg, 'error');
+                    createBtn.disabled = false;
+                    createBtn.innerHTML = '<svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg> Create Meeting';
+                    return;
+                }
+
+                var meeting = await resp.json();
+                var meetingUrl = meeting.jitsiRoomUrl || (window.location.origin + '/' + (meeting.roomName || meeting.id));
+
+                // For instant meetings, redirect to room immediately
+                if (isInstant) {
+                    window.location.href = meetingUrl;
+                    return;
+                }
+
+                // Show success for scheduled meetings
+                document.getElementById('successTitle').textContent = titleVal;
+                document.getElementById('successUrl').value = meetingUrl;
+                document.getElementById('joinNowBtn').href = meetingUrl;
+                document.getElementById('successOverlay').classList.add('show');
+
+                // Copy link if requested
+                if (document.getElementById('notifCopyLink').checked) {
+                    try {
+                        await navigator.clipboard.writeText(meetingUrl);
+                        showToast('Meeting link copied to clipboard', 'success');
+                    } catch (e) {
+                        var tempInput = document.createElement('input');
+                        tempInput.value = meetingUrl;
+                        document.body.appendChild(tempInput);
+                        tempInput.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(tempInput);
+                        showToast('Meeting link copied to clipboard', 'success');
+                    }
+                }
+
+                // Confetti
+                launchConfetti();
+
+            } catch (e) {
+                showToast('Network error. Please check your connection.', 'error');
+                createBtn.disabled = false;
+                createBtn.innerHTML = '<svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg> Create Meeting';
+            }
+        };
+
+        // ---- Copy success URL ----
+        window.copySuccessUrl = function() {
+            var urlInput = document.getElementById('successUrl');
+            var url = urlInput.value;
+            navigator.clipboard.writeText(url).then(function() {
+                showToast('Link copied!', 'success');
+            }).catch(function() {
+                urlInput.select();
+                document.execCommand('copy');
+                showToast('Link copied!', 'success');
+            });
+        };
+
+        // ---- Create another ----
+        window.createAnother = function() {
+            document.getElementById('successOverlay').classList.remove('show');
+            // Reset form
+            document.getElementById('meetingTitle').value = '';
+            document.getElementById('meetingDescription').value = '';
+            document.getElementById('meetingType').value = 'GROUP';
+            participants = [];
+            renderParticipants();
+            setAccess(true);
+            document.getElementById('settingRecording').checked = false;
+            document.getElementById('settingAutoRecord').checked = false;
+            document.getElementById('settingChat').checked = true;
+            document.getElementById('settingScreenShare').checked = true;
+            document.getElementById('settingWhiteboard').checked = true;
+            document.getElementById('settingLobby').checked = false;
+            document.getElementById('settingMuteOnJoin').checked = false;
+            document.getElementById('settingVideoOff').checked = false;
+            document.getElementById('settingBreakout').checked = false;
+            document.getElementById('settingAllowScreenShare').checked = true;
+            document.getElementById('settingAllowRecording').checked = false;
+            document.getElementById('settingAllowEndMeeting').checked = false;
+            document.getElementById('settingAllowMuteOthers').checked = false;
+            document.getElementById('settingAllowRemoveOthers').checked = false;
+            document.getElementById('settingMaxParticipants').value = '';
+            document.getElementById('notifEmail').checked = true;
+            document.getElementById('notifCopyLink').checked = false;
+
+            // Re-set date/time
+            var now = new Date();
+            now.setMinutes(now.getMinutes() + 30 - (now.getMinutes() % 30), 0, 0);
+            var dateStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+            var timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+            document.getElementById('meetingDate').value = dateStr;
+            document.getElementById('meetingTime').value = timeStr;
+            document.getElementById('meetingDuration').value = '60';
+            document.getElementById('customDurationGroup').style.display = 'none';
+
+            selectedDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            calendarDate = new Date(now.getFullYear(), now.getMonth(), 1);
+            renderCalendar();
+            updateSummary();
+
+            var createBtn = document.getElementById('createBtn');
+            createBtn.disabled = false;
+            createBtn.innerHTML = '<svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg> Create Meeting';
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        // ---- Confetti ----
+        function launchConfetti() {
+            var colors = ['#7c3aed', '#ec4899', '#3b82f6', '#10b981', '#f59e0b', '#a78bfa', '#f472b6'];
+            for (var i = 0; i < 60; i++) {
+                var piece = document.createElement('div');
+                piece.className = 'confetti-piece';
+                piece.style.left = Math.random() * 100 + 'vw';
+                piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+                piece.style.width = (Math.random() * 8 + 4) + 'px';
+                piece.style.height = (Math.random() * 8 + 4) + 'px';
+                piece.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+                piece.style.animation = 'confettiFall ' + (Math.random() * 2 + 1.5) + 's ease-out ' + (Math.random() * 0.5) + 's forwards';
+                piece.style.opacity = '0';
+                piece.style.top = '-10px';
+                document.body.appendChild(piece);
+                (function(el) {
+                    // Force reflow then set opacity
+                    el.offsetHeight;
+                    el.style.opacity = '1';
+                    setTimeout(function() { el.remove(); }, 4000);
+                })(piece);
+            }
+        }
+
+        // ---- Tab Switching ----
+        var currentTab = 'meetings';
+        window.switchTab = function(tab) {
+            currentTab = tab;
+            document.getElementById('tabMeetings').classList.toggle('active', tab === 'meetings');
+            document.getElementById('tabCreate').classList.toggle('active', tab === 'create');
+
+            if (tab === 'meetings') {
+                document.getElementById('pageTitle').textContent = 'My Meetings';
+                document.getElementById('newMeetingBtn').style.display = '';
+            } else {
+                document.getElementById('pageTitle').textContent = 'New Meeting';
+                document.getElementById('newMeetingBtn').style.display = 'none';
+            }
+
+            if (tab === 'meetings' && allMeetings.length === 0 && !meetingsLoaded) {
+                loadMyMeetings();
+            }
+        };
+
+        // ---- Meetings List ----
+        var allMeetings = [];
+        var meetingsLoaded = false;
+        var currentFilter = 'all';
+        var meetingsPage = 0;
+        var meetingsPageSize = 20;
+        var hasMoreMeetings = false;
+
+        window.loadMyMeetings = async function() {
+            var token = await getValidToken();
+            if (!token) return;
+
+            document.getElementById('meetingsLoading').style.display = '';
+            document.getElementById('meetingsEmpty').style.display = 'none';
+            document.getElementById('meetingsList').innerHTML = '';
+
+            try {
+                var resp = await fetch(MEETING_URL + '/meetings/my?page=0&size=' + meetingsPageSize + '&sort=createdAt,desc', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+
+                if (!resp.ok) {
+                    showToast('Failed to load meetings', 'error');
+                    document.getElementById('meetingsLoading').style.display = 'none';
+                    return;
+                }
+
+                var data = await resp.json();
+                allMeetings = data.content || [];
+                meetingsPage = 0;
+                hasMoreMeetings = !data.last;
+                meetingsLoaded = true;
+
+                document.getElementById('meetingsLoading').style.display = 'none';
+                renderMeetingsList();
+            } catch (e) {
+                document.getElementById('meetingsLoading').style.display = 'none';
+                showToast('Network error loading meetings', 'error');
+            }
+        }
+
+        window.loadMoreMeetings = async function() {
+            var token = await getValidToken();
+            if (!token) return;
+
+            meetingsPage++;
+            try {
+                var resp = await fetch(MEETING_URL + '/meetings/my?page=' + meetingsPage + '&size=' + meetingsPageSize + '&sort=createdAt,desc', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (resp.ok) {
+                    var data = await resp.json();
+                    allMeetings = allMeetings.concat(data.content || []);
+                    hasMoreMeetings = !data.last;
+                    renderMeetingsList();
+                }
+            } catch (e) {
+                showToast('Failed to load more meetings', 'error');
+            }
+        };
+
+        window.filterMeetings = function(filter) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(function(btn) {
+                btn.classList.toggle('active', btn.getAttribute('data-filter') === filter);
+            });
+            renderMeetingsList();
+        };
+
+        function renderMeetingsList() {
+            var container = document.getElementById('meetingsList');
+            var emptyEl = document.getElementById('meetingsEmpty');
+            var paginationEl = document.getElementById('meetingsPagination');
+
+            var filtered = currentFilter === 'all'
+                ? allMeetings
+                : allMeetings.filter(function(m) { return m.status === currentFilter; });
+
+            if (filtered.length === 0) {
+                container.innerHTML = '';
+                emptyEl.style.display = '';
+                paginationEl.style.display = 'none';
+                return;
+            }
+
+            emptyEl.style.display = 'none';
+            container.innerHTML = '';
+
+            filtered.forEach(function(m) {
+                var card = document.createElement('div');
+                card.className = 'meeting-card';
+                card.innerHTML = buildMeetingCardHtml(m);
+                container.appendChild(card);
+            });
+
+            paginationEl.style.display = hasMoreMeetings ? '' : 'none';
+        }
+
+        function buildMeetingCardHtml(m) {
+            var statusLabel = (m.status || 'SCHEDULED').replace('_', ' ');
+            var statusClass = 'status-' + (m.status || 'SCHEDULED');
+            var accessBadge = m.isPublic
+                ? '<span class="access-badge-small access-public">Public</span>'
+                : '<span class="access-badge-small access-private">Private</span>';
+
+            var dateStr = '--';
+            if (m.scheduledAt) {
+                var d = new Date(m.scheduledAt);
+                dateStr = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+                    + ' at ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            }
+
+            var durationStr = m.durationMinutes ? formatDuration(m.durationMinutes) : '--';
+            var typeStr = (m.meetingType || '').replace('_', '-');
+            var participantCount = m.participants ? m.participants.length : 0;
+
+            var meetingUrl = window.location.origin + '/' + (m.roomName || '');
+            var joinUrl = escapeHtml(meetingUrl);
+
+            var actions = '';
+            if (m.status === 'SCHEDULED' || m.status === 'IN_PROGRESS') {
+                actions += '<a href="' + joinUrl + '" target="_blank" class="btn btn-join">Join</a>';
+                actions += '<button class="btn btn-copy-link" onclick="copyMeetingLink(\'' + escapeJsAttr(meetingUrl) + '\')">Copy Link</button>';
+                if (m.status === 'SCHEDULED') {
+                    actions += '<button class="btn btn-cancel-meeting" onclick="cancelMeeting(' + m.id + ')">Cancel</button>';
+                }
+            } else {
+                actions += '<button class="btn btn-copy-link" onclick="copyMeetingLink(\'' + escapeJsAttr(meetingUrl) + '\')">Copy Link</button>';
+            }
+
+            return '<div class="meeting-card-header">'
+                + '<div class="meeting-card-title" title="' + escapeHtml(m.title || '') + '">' + escapeHtml(m.title || 'Untitled') + '</div>'
+                + '<span class="meeting-status-badge ' + statusClass + '">' + escapeHtml(statusLabel) + '</span>'
+                + '</div>'
+                + '<div class="meeting-card-meta">'
+                + '<div class="meeting-card-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span>' + escapeHtml(dateStr) + '</span></div>'
+                + '<div class="meeting-card-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>' + escapeHtml(durationStr) + '</span> ' + accessBadge + '</div>'
+                + '<div class="meeting-card-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><span>' + participantCount + ' participant' + (participantCount !== 1 ? 's' : '') + '</span> <span style="margin-left:4px;font-size:11px;color:#94a3b8">' + escapeHtml(typeStr) + '</span></div>'
+                + '</div>'
+                + '<div class="meeting-card-actions">' + actions + '</div>';
+        }
+
+        window.copyMeetingLink = function(url) {
+            navigator.clipboard.writeText(url).then(function() {
+                showToast('Link copied!', 'success');
+            }).catch(function() {
+                var temp = document.createElement('input');
+                temp.value = url;
+                document.body.appendChild(temp);
+                temp.select();
+                document.execCommand('copy');
+                document.body.removeChild(temp);
+                showToast('Link copied!', 'success');
+            });
+        };
+
+        window.cancelMeeting = async function(meetingId) {
+            if (!confirm('Are you sure you want to cancel this meeting?')) return;
+
+            var token = await getValidToken();
+            if (!token) return;
+
+            try {
+                var resp = await fetch(MEETING_URL + '/meetings/' + meetingId + '/cancel', {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+
+                if (resp.ok || resp.status === 204) {
+                    showToast('Meeting cancelled', 'success');
+                    // Update local state
+                    allMeetings = allMeetings.map(function(m) {
+                        if (m.id === meetingId) m.status = 'CANCELLED';
+                        return m;
+                    });
+                    renderMeetingsList();
+                } else {
+                    var errText = await resp.text();
+                    var errMsg = 'Failed to cancel meeting';
+                    try { errMsg = JSON.parse(errText).message || errMsg; } catch (e) {}
+                    showToast(errMsg, 'error');
+                }
+            } catch (e) {
+                showToast('Network error', 'error');
+            }
+        };
+
+        // Load meetings on init
+        loadMyMeetings();
+
+        // After creating a meeting, switch to meetings tab and reload
+        var originalCreateMeeting = window.createMeeting;
+        window.createMeeting = async function() {
+            await originalCreateMeeting();
+            // If success overlay is showing, meetings were created
+            if (document.getElementById('successOverlay').classList.contains('show')) {
+                meetingsLoaded = false; // force reload when switching back
+            }
+        };
+
+        // Override createAnother to switch to create tab
+        var originalCreateAnother = window.createAnother;
+        window.createAnother = function() {
+            originalCreateAnother();
+            switchTab('create');
+        };
+
+        // Check URL params for auto-switching to create tab
+        var urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('action') === 'create') {
+            switchTab('create');
+        }
+
+    })();
+    </script>
+</body>
+</html>

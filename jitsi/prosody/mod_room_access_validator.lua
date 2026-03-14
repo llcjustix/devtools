@@ -25,7 +25,7 @@ local hmac_sha256 = require "util.hashes".hmac_sha256
 local b64_encode = require "util.encodings".base64.encode
 
 -- Get configuration from environment variables or Prosody config
-local meeting_service_url = os.getenv("MEETING_SERVICE_URL") or module:get_option_string("meeting_service_url", "http://localhost:2031")
+local meeting_service_url = os.getenv("MEETING_SERVICE_URL") or module:get_option_string("meeting_service_url", "http://host.docker.internal:2022/meeting-service")
 local validate_url = meeting_service_url .. "/webhooks/jitsi/validate-user-room-access"
 local webhook_secret = os.getenv("JITSI_WEBHOOK_SECRET") or module:get_option_string("webhook_secret", "")
 
@@ -262,15 +262,25 @@ module:hook("muc-occupant-pre-join", function(event)
         error_condition = "gone"
         error_text = "This meeting has been cancelled."
 
-    elseif result.status == "COMPLETED" then
+    elseif result.status == "EXPIRED" then
+        error_type = "cancel"
+        error_condition = "gone"
+        error_text = "This meeting has expired."
+
+    elseif result.status == "ENDED" then
         error_type = "cancel"
         error_condition = "gone"
         error_text = "This meeting has ended."
 
-    elseif result.reason == "Meeting duration has expired" then
+    elseif result.reason == "Meeting has expired" then
         error_type = "cancel"
         error_condition = "gone"
         error_text = "This meeting has exceeded its time limit."
+
+    elseif result.reason == "Meeting ended. Only the host can restart it." then
+        error_type = "cancel"
+        error_condition = "gone"
+        error_text = "Meeting ended. Only the host can restart it."
 
     elseif result.reason == "Meeting not found" then
         error_type = "cancel"

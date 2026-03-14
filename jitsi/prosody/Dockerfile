@@ -24,8 +24,14 @@ RUN mkdir -p /prosody-plugins-custom && \
 # Copy custom modules into the standard custom plugins directory
 COPY mod_jitsi_webhooks_enhanced.lua /prosody-plugins-custom/mod_jitsi_webhooks_enhanced.lua
 COPY mod_room_access_validator.lua /prosody-plugins-custom/mod_room_access_validator.lua
+COPY mod_meeting_http_api.lua /prosody-plugins-custom/mod_meeting_http_api.lua
+
+# Copy community plugins (from jitsi-contrib/prosody-plugins)
+# token_affiliation: sets moderator role from JWT (teacher/admin = owner)
+COPY mod_token_affiliation.lua /prosody-plugins-custom/mod_token_affiliation.lua
+# jibri_autostart: auto-starts recording when moderator joins
+COPY mod_jibri_autostart.lua /prosody-plugins-custom/mod_jibri_autostart.lua
 
 # Set correct permissions
-RUN chmod 644 /prosody-plugins-custom/mod_jitsi_webhooks_enhanced.lua && \
-    chmod 644 /prosody-plugins-custom/mod_room_access_validator.lua && \
+RUN chmod 644 /prosody-plugins-custom/*.lua && \
     chown prosody:prosody /prosody-plugins-custom/*.lua
