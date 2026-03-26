@@ -84,6 +84,62 @@
         "clientRole": false,
         "containerId": "fa09bc7e-302c-4db3-97e8-96aad233ab55",
         "attributes": {}
+      },
+      {
+        "id": "a0000001-0000-0000-0000-000000000001",
+        "name": "STUDENT",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "fa09bc7e-302c-4db3-97e8-96aad233ab55",
+        "attributes": {}
+      },
+      {
+        "id": "a0000001-0000-0000-0000-000000000002",
+        "name": "TEACHER",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "fa09bc7e-302c-4db3-97e8-96aad233ab55",
+        "attributes": {}
+      },
+      {
+        "id": "a0000001-0000-0000-0000-000000000003",
+        "name": "SPEAKER",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "fa09bc7e-302c-4db3-97e8-96aad233ab55",
+        "attributes": {}
+      },
+      {
+        "id": "a0000001-0000-0000-0000-000000000004",
+        "name": "ADMIN",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "fa09bc7e-302c-4db3-97e8-96aad233ab55",
+        "attributes": {}
+      },
+      {
+        "id": "a0000001-0000-0000-0000-000000000005",
+        "name": "SUPERADMIN",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "fa09bc7e-302c-4db3-97e8-96aad233ab55",
+        "attributes": {}
+      },
+      {
+        "id": "a0000001-0000-0000-0000-000000000006",
+        "name": "ROOT",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "fa09bc7e-302c-4db3-97e8-96aad233ab55",
+        "attributes": {}
+      },
+      {
+        "id": "a0000001-0000-0000-0000-000000000007",
+        "name": "MANAGER",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "fa09bc7e-302c-4db3-97e8-96aad233ab55",
+        "attributes": {}
       }
     ],
     "client": {
@@ -476,12 +532,31 @@
       "disableableCredentialTypes": [],
       "requiredActions": [],
       "realmRoles": [
-        "default-roles-justix-academy"
+        "offline_access",
+        "default-roles-justix-academy",
+        "uma_authorization"
       ],
       "clientRoles": {
         "realm-management": [
+          "manage-realm",
+          "view-realm",
           "impersonation",
-          "create-client"
+          "view-authorization",
+          "view-clients",
+          "query-clients",
+          "view-users",
+          "realm-admin",
+          "query-users",
+          "query-groups",
+          "query-realms",
+          "create-client",
+          "manage-clients",
+          "manage-authorization",
+          "manage-users",
+          "manage-identity-providers",
+          "view-events",
+          "view-identity-providers",
+          "manage-events"
         ],
         "justix-academy": [
           "uma_protection"
@@ -501,6 +576,42 @@
         ]
       },
       "notBefore": 0,
+      "groups": []
+    },
+    {
+      "id": "b0000001-0000-0000-0000-000000000001",
+      "username": "admin@learnx.uz",
+      "email": "admin@learnx.uz",
+      "firstName": "Admin",
+      "lastName": "Admin",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "root",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["ADMIN", "default-roles-justix-academy"],
+      "groups": []
+    },
+    {
+      "id": "b0000001-0000-0000-0000-000000000002",
+      "username": "root@learnx.uz",
+      "email": "root@learnx.uz",
+      "firstName": "Root",
+      "lastName": "Root",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "root",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["STUDENT", "TEACHER", "SPEAKER", "ADMIN", "SUPERADMIN", "ROOT", "MANAGER", "default-roles-justix-academy"],
       "groups": []
     }
   ],
@@ -715,7 +826,7 @@
       "enabled": true,
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
-      "secret": "**********",
+      "secret": "0UdvHKIVAwLFaZ1adAkJ03NUsmSflI8i",
       "redirectUris": [
         "/*"
       ],
@@ -729,7 +840,7 @@
       "implicitFlowEnabled": true,
       "directAccessGrantsEnabled": true,
       "serviceAccountsEnabled": true,
-      "authorizationServicesEnabled": true,
+      "authorizationServicesEnabled": false,
       "publicClient": false,
       "frontchannelLogout": true,
       "protocol": "openid-connect",
@@ -794,6 +905,7 @@
       "defaultClientScopes": [
         "web-origins",
         "acr",
+        "user_id",
         "profile",
         "roles",
         "basic",
@@ -804,24 +916,7 @@
         "phone",
         "offline_access",
         "microprofile-jwt"
-      ],
-      "authorizationSettings": {
-        "allowRemoteResourceManagement": true,
-        "policyEnforcementMode": "ENFORCING",
-        "resources": [
-          {
-            "name": "Default Resource",
-            "type": "urn:justix-academy:resources:default",
-            "ownerManagedAccess": false,
-            "attributes": {},
-            "uris": [
-              "/*"
-            ]
-          }
-        ],
-        "scopes": [],
-        "decisionStrategy": "UNANIMOUS"
-      }
+      ]
     },
     {
       "id": "b4710ff2-decb-49f5-a8f7-6e52f8e2e1b3",
@@ -1503,6 +1598,34 @@
           }
         }
       ]
+    },
+    {
+      "id": "a1b2c3d4-user-id-scope-0001",
+      "name": "user_id",
+      "description": "Maps user_id attribute to JWT claim",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "false",
+        "display.on.consent.screen": "false"
+      },
+      "protocolMappers": [
+        {
+          "id": "a1b2c3d4-user-id-mapper-001",
+          "name": "user_id",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "introspection.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "user.attribute": "user_id",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "user_id",
+            "jsonType.label": "String"
+          }
+        }
+      ]
     }
   ],
   "defaultDefaultClientScopes": [
@@ -1512,7 +1635,8 @@
     "roles",
     "web-origins",
     "acr",
-    "basic"
+    "basic",
+    "user_id"
   ],
   "defaultOptionalClientScopes": [
     "offline_access",

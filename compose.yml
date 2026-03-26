@@ -18,8 +18,7 @@ services:
     networks:
       - infra-network
     volumes:
-      - ./db/schema.sql:/docker-entrypoint-initdb.d/schema.sql
-      - ./data/postgres:/var/data/postgresql
+      - ./data/postgresql:/var/lib/postgresql/data
   #------------------------------------------- Keycloak ----------------------------------------------------------------
   keycloak:
     container_name: keycloak
@@ -28,27 +27,16 @@ services:
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME}
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD}
-      KC_DB: postgres
-      KC_DB_SCHEMA: keycloak
-      KC_DB_USERNAME: ${KC_DB_USERNAME}
-      KC_DB_PASSWORD: ${KC_DB_PASSWORD}
-      KC_DB_URL_HOST: ${KC_DB_URL_HOST}
-      KC_DB_URL_PORT: ${KC_DB_URL_PORT}
-      KC_DB_URL_DATABASE: ${KC_DB_URL_DATABASE}
-      KC_DB_URL_PROPERTIES: "?sslmode=${KC_DB_SSLMODE}"
-      KC_HTTP_ENABLED: "true"
+      KC_DB: dev-file
+      KC_HTTP_PORT: 8080
       KC_HEALTH_ENABLED: "true"
-      KC_METRICS_ENABLED: "true"
-    depends_on:
-      postgres:
-        condition: service_healthy
     ports:
-      - "8080:8080"
+      - "${KEYCLOAK_PORT}:8080"
     volumes:
-      - ./keycloak/:/opt/keycloak/data/import
+      - ./keycloak:/opt/keycloak/data/import
     healthcheck:
-      test: [ "CMD", "/opt/keycloak/bin/kc.sh", "show-config" ]
-      interval: 15s
+      test: [ "CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080" ]
+      interval: 10s
       timeout: 5s
       retries: 15
     networks:
@@ -56,15 +44,48 @@ services:
   #------------------------------------------- Keycloak Init------------------------------------------------------------
   keycloak-init:
     container_name: keycloak-init
-    image: postgres:${POSTGRES_VERSION}
+    image: quay.io/keycloak/keycloak:${KEYCLOAK_VERSION}
     depends_on:
       keycloak:
         condition: service_healthy
+    entrypoint:
+      - bash
+      - -c
+      - |
+        KCADM=/opt/keycloak/bin/kcadm.sh
+
+        echo '--- Authenticating to Keycloak admin ---'
+        $$KCADM config credentials --server http://keycloak:8080 --realm master --user $$KC_USER --password $$KC_PASS
+
+        echo '--- Disabling SSL on master realm ---'
+        $$KCADM update realms/master -s sslRequired=NONE
+
+        echo '--- Configuring client secret for $$KC_CLIENT_ID in realm $$KC_REALM ---'
+        CLIENT_UUID=$$($$KCADM get clients -r $$KC_REALM -q clientId=$$KC_CLIENT_ID --fields id 2>/dev/null | grep '"id"' | sed 's/.*: *"\(.*\)".*/\1/')
+
+        if [ -n "$$CLIENT_UUID" ]; then
+          $$KCADM update clients/$$CLIENT_UUID -r $$KC_REALM -s "secret=$$KC_CLIENT_SECRET"
+          echo "--- Client secret updated for $$KC_CLIENT_ID ($$CLIENT_UUID) ---"
+        else
+          echo "--- WARNING: Client $$KC_CLIENT_ID not found in realm $$KC_REALM ---"
+        fi
+
+        echo '--- Configuring user profile (register user_id attribute, relax firstName/lastName) ---'
+        cat > /tmp/up.json << 'UP_EOF'
+        {"attributes":[{"name":"username","displayName":"username","validations":{"length":{"min":3,"max":255},"username-prohibited-characters":{},"up-username-not-idn-homograph":{}},"permissions":{"view":["admin","user"],"edit":["admin","user"]},"multivalued":false},{"name":"email","displayName":"email","validations":{"email":{},"length":{"max":255}},"required":{"roles":["user"]},"permissions":{"view":["admin","user"],"edit":["admin","user"]},"multivalued":false},{"name":"firstName","displayName":"firstName","validations":{"length":{"max":255},"person-name-prohibited-characters":{}},"permissions":{"view":["admin","user"],"edit":["admin","user"]},"multivalued":false},{"name":"lastName","displayName":"lastName","validations":{"length":{"max":255},"person-name-prohibited-characters":{}},"permissions":{"view":["admin","user"],"edit":["admin","user"]},"multivalued":false},{"name":"user_id","displayName":"User ID","permissions":{"view":["admin"],"edit":["admin"]},"multivalued":false}],"groups":[{"name":"user-metadata","displayHeader":"User metadata","displayDescription":"Attributes, which refer to user metadata"}]}
+        UP_EOF
+        $$KCADM update realms/$$KC_REALM/users/profile -f /tmp/up.json
+        echo '--- User profile configured ---'
+
+        echo '--- Keycloak init completed ---'
+    environment:
+      KC_USER: ${KC_BOOTSTRAP_ADMIN_USERNAME}
+      KC_PASS: ${KC_BOOTSTRAP_ADMIN_PASSWORD}
+      KC_REALM: ${KEYCLOAK_REALM}
+      KC_CLIENT_ID: ${KEYCLOAK_CLIENT_ID}
+      KC_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
     networks:
       - infra-network
-    entrypoint: >
-      bash -c "sleep 10 &&
-      PGPASSWORD=passwd psql -h postgres -U postgres -d academy -c \"UPDATE keycloak.realm SET ssl_required='NONE' WHERE name='master';\""
   #------------------------------------------ Redis --------------------------------------------------------------------
   redis:
     container_name: redis
@@ -110,8 +131,8 @@ services:
     volumes:
       - ./data/minio:/data
     ports:
-      - '9000:9000'
-      - '9001:9001'
+      - '${MINIO_API_PORT}:9000'
+      - '${MINIO_CONSOLE_PORT}:9001'
     command: server /data --console-address ":9001"
     healthcheck:
       test: curl -f http://localhost:9000/minio/health/live || exit 1
@@ -184,219 +205,11 @@ services:
       - infra-network
 
   #------------------------------------------ JITSI MEET STACK ---------------------------------------------------------
-  # Custom Prosody with webhook module (built from Dockerfile)
-  jitsi-prosody:
-    build:
-      context: ./jitsi/prosody
-      dockerfile: Dockerfile
-      args:
-        JITSI_PROSODY_VERSION: ${JITSI_PROSODY_VERSION}
-    image: justix/jitsi-prosody:${JITSI_PROSODY_VERSION}
-    container_name: jitsi-prosody
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "pgrep -f prosody > /dev/null || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 20s
-    environment:
-      - ENABLE_AUTH=1
-      - ENABLE_GUESTS=1
-      - AUTH_TYPE=jwt
-      - JWT_APP_ID=jitsi
-      - JWT_APP_SECRET=${JWT_APP_SECRET}
-      - JWT_ALLOW_EMPTY=0
-      - XMPP_DOMAIN=meet.jitsi
-      - XMPP_AUTH_DOMAIN=auth.meet.jitsi
-      - XMPP_MUC_DOMAIN=muc.meet.jitsi
-      - XMPP_INTERNAL_MUC_DOMAIN=internal-muc.meet.jitsi
-      - XMPP_GUEST_DOMAIN=guest.meet.jitsi
-      - JICOFO_COMPONENT_SECRET=${JICOFO_COMPONENT_SECRET}
-      - JICOFO_AUTH_PASSWORD=${JICOFO_AUTH_PASSWORD}
-      - JVB_AUTH_PASSWORD=${JVB_AUTH_PASSWORD}
-      - JIBRI_RECORDER_PASSWORD=${JIBRI_RECORDER_PASSWORD}
-      - JIBRI_XMPP_PASSWORD=${JIBRI_XMPP_PASSWORD}
-      - TZ=UTC
-      # Load custom modules
-      - GLOBAL_MODULES=jitsi_webhooks_enhanced,room_access_validator,meeting_http_api
-      - XMPP_MUC_MODULES=jitsi_webhooks_enhanced,room_access_validator,token_affiliation,jibri_autostart
-      - GLOBAL_CONFIG=jitsi_webhook_url = "${MEETING_SERVICE_URL}/webhooks/jitsi"\njitsi_webhook_secret = "${JITSI_WEBHOOK_SECRET}"\nvalidate_access_url = "${MEETING_SERVICE_URL}/webhooks/jitsi/validate-access"\nwebhook_secret = "${JITSI_WEBHOOK_SECRET}"
-      # Environment variables for custom modules (read by os.getenv)
-      - MEETING_SERVICE_URL=${MEETING_SERVICE_URL}
-      - JITSI_WEBHOOK_SECRET=${JITSI_WEBHOOK_SECRET}
-    ports:
-      - "5280:5280"   # Prosody HTTP API (for backend destroy-room calls)
-    volumes:
-      - jitsi-prosody-config:/config
-    networks:
-      - infra-network
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-
-  # Jicofo (conference focus)
-  jitsi-jicofo:
-    image: jitsi/jicofo:${JITSI_JICOFO_VERSION}
-    container_name: jitsi-jicofo
-    restart: unless-stopped
-    environment:
-      - XMPP_SERVER=jitsi-prosody
-      - XMPP_DOMAIN=meet.jitsi
-      - XMPP_AUTH_DOMAIN=auth.meet.jitsi
-      - XMPP_MUC_DOMAIN=muc.meet.jitsi
-      - XMPP_INTERNAL_MUC_DOMAIN=internal-muc.meet.jitsi
-      - JICOFO_COMPONENT_SECRET=${JICOFO_COMPONENT_SECRET}
-      - JICOFO_AUTH_PASSWORD=${JICOFO_AUTH_PASSWORD}
-      - JVB_BREWERY_MUC=jvbbrewery
-      - JIBRI_BREWERY_MUC=jibribrewery
-      - JIBRI_PENDING_TIMEOUT=90
-      - TZ=UTC
-    depends_on:
-      jitsi-prosody:
-        condition: service_healthy
-    networks:
-      - infra-network
-
-  # JVB (video bridge)
-  jitsi-jvb:
-    image: jitsi/jvb:${JITSI_JVB_VERSION}
-    container_name: jitsi-jvb
-    restart: unless-stopped
-    ports:
-      - "10000:10000/udp"
-      - "4443:4443"
-    environment:
-      - XMPP_SERVER=jitsi-prosody
-      - XMPP_DOMAIN=meet.jitsi
-      - XMPP_AUTH_DOMAIN=auth.meet.jitsi
-      - XMPP_INTERNAL_MUC_DOMAIN=internal-muc.meet.jitsi
-      - JVB_AUTH_PASSWORD=${JVB_AUTH_PASSWORD}
-      - JVB_BREWERY_MUC=jvbbrewery
-      - JVB_STUN_SERVERS=stun.l.google.com:19302
-      - DOCKER_HOST_ADDRESS=${DOCKER_HOST_ADDRESS}
-      - JVB_PORT=10000
-      - JVB_TCP_HARVESTER_DISABLED=true
-      - TZ=UTC
-    depends_on:
-      jitsi-prosody:
-        condition: service_healthy
-    networks:
-      - infra-network
-
-  # Custom Web interface with branding and recording config
-  jitsi-web:
-    build:
-      context: ./jitsi/web
-      dockerfile: Dockerfile
-      args:
-        JITSI_WEB_VERSION: ${JITSI_WEB_VERSION}
-        MEETING_SERVICE_URL: ${BROWSER_MEETING_SERVICE_URL:-http://localhost:2022/meeting-service}
-        AUTH_SERVICE_URL: ${BROWSER_AUTH_SERVICE_URL:-http://localhost:2022/auth-service}
-    image: justix/jitsi-web:${JITSI_WEB_VERSION}
-    container_name: jitsi-web
-    restart: unless-stopped
-    ports:
-      - "8443:443"
-      - "8001:80"
-    environment:
-      - ENABLE_AUTH=1
-      - ENABLE_GUESTS=1
-      - AUTH_TYPE=jwt
-      - JWT_APP_ID=jitsi
-      - JWT_APP_SECRET=${JWT_APP_SECRET}
-      - JWT_ALLOW_EMPTY=0
-      - XMPP_DOMAIN=meet.jitsi
-      - XMPP_AUTH_DOMAIN=auth.meet.jitsi
-      - XMPP_MUC_DOMAIN=muc.meet.jitsi
-      - XMPP_GUEST_DOMAIN=guest.meet.jitsi
-      - XMPP_BOSH_URL_BASE=http://jitsi-prosody:5280
-      - JICOFO_AUTH_PASSWORD=${JICOFO_AUTH_PASSWORD}
-      - PUBLIC_URL=${PUBLIC_URL}
-      - ENABLE_RECORDING=1
-      - DROPBOX_APPKEY=""
-      - DROPBOX_REDIRECT_URI=""
-      - ENABLE_FILE_RECORDING_SERVICE=0
-      - ENABLE_TRANSCRIPTIONS=0
-      - DISABLE_HTTPS=${DISABLE_HTTPS}
-      - ENABLE_WELCOME_PAGE=0
-      - ENABLE_CLOSE_PAGE=0
-      - MEETING_SERVICE_URL=${MEETING_SERVICE_URL}
-      - WHITEBOARD_ENABLED=1
-      - WHITEBOARD_COLLAB_SERVER_PUBLIC_URL=${WHITEBOARD_COLLAB_SERVER_PUBLIC_URL:-http://localhost:8001/whiteboard}
-      - TZ=UTC
-    depends_on:
-      jitsi-prosody:
-        condition: service_healthy
-    networks:
-      - infra-network
-
-  # Custom Jibri with finalize script (built from Dockerfile)
-  jitsi-jibri:
-    build:
-      context: ./jitsi/jibri
-      dockerfile: Dockerfile
-      args:
-        JITSI_JIBRI_VERSION: ${JITSI_JIBRI_VERSION}
-    image: justix/jitsi-jibri:${JITSI_JIBRI_VERSION}
-    container_name: jitsi-jibri
-    restart: unless-stopped
-    privileged: true
-    environment:
-      - XMPP_DOMAIN=meet.jitsi
-      - XMPP_AUTH_DOMAIN=auth.meet.jitsi
-      - XMPP_INTERNAL_MUC_DOMAIN=internal-muc.meet.jitsi
-      - XMPP_RECORDER_DOMAIN=recorder.meet.jitsi
-      - XMPP_SERVER=jitsi-prosody
-      - JIBRI_BREWERY_MUC=jibribrewery
-      - JIBRI_RECORDER_PASSWORD=${JIBRI_RECORDER_PASSWORD}
-      - JIBRI_XMPP_PASSWORD=${JIBRI_XMPP_PASSWORD}
-      - JIBRI_RECORDING_DIR=/tmp/recordings
-      - JIBRI_FINALIZE_RECORDING_SCRIPT_PATH=/usr/local/bin/jibri-finalize.sh
-      - JIBRI_STRIP_DOMAIN_JID=muc
-      - JIBRI_LOGS_DIR=/var/log/jibri
-      - DISPLAY=:0
-      - TZ=UTC
-      # Finalize script configuration (env vars read by jibri-finalize.sh)
-      - UPLOAD_SERVICE_URL=${MEETING_SERVICE_URL}/webhooks/jitsi
-      - FILE_SERVICE_URL=${JITSI_RECORDING_FILE_SERVICE_URL:-http://host.docker.internal:2022/file-service}
-      - RECORDING_BUCKET=${JITSI_RECORDING_BUCKET:-recordings}
-      - JITSI_WEBHOOK_SECRET=${JITSI_WEBHOOK_SECRET}
-    volumes:
-      - jitsi-jibri-recordings:/tmp/recordings
-      - jitsi-jibri-logs:/var/log/jibri
-    depends_on:
-      jitsi-prosody:
-        condition: service_healthy
-      jitsi-jicofo:
-        condition: service_started
-    networks:
-      - infra-network
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    shm_size: '2gb'
-
-  # Excalidraw collaborative whiteboard backend for Jitsi
-  jitsi-whiteboard:
-    image: jitsi/excalidraw-backend:latest
-    container_name: jitsi-whiteboard
-    restart: unless-stopped
-    environment:
-      - PORT=80
-    depends_on:
-      - jitsi-web
-    networks:
-      infra-network:
-        aliases:
-          - whiteboard.meet.jitsi
+  # Jitsi is now managed separately in ~/IdeaProjects/justix/jitsi/
+  # See: ~/IdeaProjects/justix/jitsi/compose.yml
 
 #---------------------------------------------- Volumes ---------------------------------------------------------------
-volumes:
-  jitsi-prosody-config:
-    driver: local
-  jitsi-jibri-recordings:
-    driver: local
-  jitsi-jibri-logs:
-    driver: local
+volumes: {}
 
 #---------------------------------------------- Networks ---------------------------------------------------------------
 networks:
