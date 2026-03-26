@@ -589,7 +589,7 @@
       "credentials": [
         {
           "type": "password",
-          "value": "root",
+          "value": "123",
           "temporary": false
         }
       ],
@@ -607,7 +607,7 @@
       "credentials": [
         {
           "type": "password",
-          "value": "root",
+          "value": "123",
           "temporary": false
         }
       ],
