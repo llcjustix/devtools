@@ -361,7 +361,46 @@ services:
     shm_size: '2gb'
 
 #---------------------------------------------- Volumes ---------------------------------------------------------------
+  # --- log sink: OTLP in, LogsQL out -------------------------------------------------
+  # VictoriaLogs speaks OTLP over HTTP/protobuf on its own logs path
+  # (/insert/opentelemetry/v1/logs) — that full path is what an exporter must be pointed at.
+  victorialogs:
+    container_name: victorialogs
+    image: victoriametrics/victoria-logs:latest
+    restart: always
+    ports:
+      - '9428:9428'
+    command:
+      - '-storageDataPath=/victoria-logs-data'
+      - '-retentionPeriod=7d'
+    volumes:
+      - victorialogs-data:/victoria-logs-data
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:9428/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - infra-network
+
+  # Optional second line for PII: the collector can run a transform/redact processor before
+  # anything reaches storage. Services may also export to VictoriaLogs directly.
+  otel-collector:
+    container_name: otel-collector
+    image: otel/opentelemetry-collector-contrib:latest
+    restart: always
+    depends_on:
+      - victorialogs
+    ports:
+      - '4317:4317'   # OTLP gRPC
+      - '4318:4318'   # OTLP HTTP
+    volumes:
+      - ./otel/collector-config.yml:/etc/otelcol-contrib/config.yaml:ro
+    networks:
+      - infra-network
+
 volumes:
+  victorialogs-data:
   jitsi-prosody-config:
     driver: local
   jitsi-jibri-recordings:

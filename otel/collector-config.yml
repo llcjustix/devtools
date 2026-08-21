@@ -1,0 +1,39 @@
+# Local collector for the devtools stack. Two jobs: accept OTLP from a service, and strip anything
+# that should never have left it in the first place before it reaches storage.
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+    timeout: 5s
+    send_batch_size: 1024
+
+  # Second line only. The starter masks on the record, before export — this catches whatever a
+  # service logged as free text without going through the pipeline.
+  transform/redact:
+    error_mode: ignore
+    log_statements:
+      - context: log
+        statements:
+          - replace_pattern(body, "\\b\\d{4}[\\s-]?\\d{4}[\\s-]?\\d{4}[\\s-]?\\d{4}\\b", "[REDACTED-PAN]")
+          - replace_pattern(body, "\\+?998[\\s-]?\\d{2}[\\s-]?\\d{3}[\\s-]?\\d{2}[\\s-]?\\d{2}\\b", "[REDACTED-PHONE]")
+
+exporters:
+  otlphttp/victorialogs:
+    logs_endpoint: http://victorialogs:9428/insert/opentelemetry/v1/logs
+    tls:
+      insecure: true
+  debug:
+    verbosity: basic
+
+service:
+  pipelines:
+    logs:
+      receivers: [otlp]
+      processors: [transform/redact, batch]
+      exporters: [otlphttp/victorialogs, debug]
